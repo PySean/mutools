@@ -8,9 +8,9 @@
 
     TODO: The ChromoList object may also be modified to also store 
     a growing list of command line templates. This is in anticipation
-    of the 
+    of the redesign that doesn't use as much memory at once.
 """
-from inheritlist import ChromoList
+from chromolist import ChromoList
 import sys
 
 
@@ -23,11 +23,7 @@ class Synchrom():
     """
     cmd_template = 'java -Xmx2g -jar {mupath} --analysis_type MuTect \
 --showFullBamList --reference_sequence {fasta} {normal} {tumor} \
---intervals %s -vcf {dirname}%s {options}'
-    """
-    The tuple of chromosome segment strings.
-    """
-    chrm_segments = tuple()
+--intervals %s -vcf {dirname}%s {mutectopts}'
     """
     List containing a command line template for each thread.#
     The command leaves out the '--intervals <chr>' portion as a {}
@@ -50,7 +46,7 @@ class Synchrom():
     by default the file 'mutect.jar' from the current directory is used.
 
     -b
-    --bamlist: If a file was specified (with the -f option), this is an open
+    --bamlistfile: If a file was specified (with the -f option), this is an open
     file handler pointing to the file.
 
     -p
@@ -62,24 +58,25 @@ class Synchrom():
     -r
     --fasta: The name of the reference sequence file.
 
-    -o
-    --optional: Extra parameters to MuTect to be concatenated
+    -M
+    --mutectopts: Extra parameters to MuTect to be concatenated
     to the end of the string.
     """
-    def __init__(self, **kwargs):
+    def __init__(self, cmd_args):
         tumor_normals = {}
-        if kwargs.get('fd') is not None:
-            tumor_normals = self._parse_pairs_(kwargs['fd'], infile=True)
-        elif kwargs.get('pairs') is not None:
-            tumor_normals = self._parse_pairs_(kwargs['pairs'])
+        if cmd_args.bamlistfile is not None:
+            tumor_normals = self._parse_pairs_(cmd_args.bamlistfile, 
+                                               infile=True)
+        elif cmd_args.pairs is not None:
+            tumor_normals = self._parse_pairs_(cmd_args.pairs)
         else:
-            return None #At least one of the two options must be used.
-        #Remove pairs for 'fd' and 'pairs' so I can expand kwargs.
-        kwargs.pop('fd') if kwargs.get('fd') is not None else None
-        kwargs.pop('pairs') if kwargs.get('pairs') is not None else None
+            return None #At least one must be specified.
         #Create the list of command strings from tumor/normal pairs,
         #the specified reference sequence, and unrequired options for MuTect.
-        self.cmd_strings = self._build_commands_(tumor_normals, **kwargs)
+        self.cmd_strings = self._build_commands_(tumor_normals,
+                                                 cmd_args.fasta,
+                                                 cmd_args.mutectopts,
+                                                 cmd_args.mupath)
 
     """
     Parses a file or cmd line list into tumor:normal pairs. 
@@ -87,13 +84,13 @@ class Synchrom():
     """
     def _parse_pairs_(self, sample_pairs, infile=False):
         err_str = 'Error: argument {} has no tumor filename.\n'
-        arg_number = 0
         samples = {}
+        line_number = 0
         if infile == True:
             try:
                 sample_pairs = open(sample_pairs, 'r')
             except FileNotFoundError:
-                sys.stderr.write(('_parse_pairs' 
+                sys.stderr.write(('_parse_pairs_' 
                                   ' Could not open file {}\n'
                                  ).format(sample_pairs))
         for arg in sample_pairs:
@@ -102,18 +99,22 @@ class Synchrom():
                 sys.stderr.write(err_str.format(line_number))
                 return None
             samples[tumor] = normal
+            line_number += 1
+        if infile == True:
+            sample_pairs.close()
         return samples
 
     """
     Builds up the list of command strings. There is one for each
     tumor, normal pair. The auxiliary strings are above.
     """
-    def _build_commands_(self, tumor_normals, fasta, options, 
-                            mupath='mutect.jar'):
+    def _build_commands_(self, tumor_normals, fasta, mutectopts, 
+                         mupath='mutect.jar'):
         cmds = list(range(0, len(tumor_normals)))
         i = 0
         print(str(tumor_normals)) #DEBUG
-        for tumor, normal in zip(tumor_normals.keys(), tumor_normals.values()):
+        for tumor, normal in tumor_normals.iteritems():
+            normal = normal.strip()
             tumdir, normdir = tumor.split('.')[0] , normal.split('.')[0]
             dirname = tumdir + normdir
             normal = '--input_file:normal ' + normal
@@ -121,6 +122,7 @@ class Synchrom():
             #dirname = "".join(tumdir)
             cmds[i] = self.cmd_template.format(fasta=fasta, normal=normal,
                                                tumor=tumor, dirname=dirname,
-                                               mupath=mupath, options=options)
+                                               mupath=mupath,
+                                               mutectopts=mutectopts)
             i += 1
         return cmds

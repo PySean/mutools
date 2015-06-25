@@ -3,7 +3,7 @@
     'multimutect.py', by Sean Soderman
     Parallelizer for MuTect.
 """
-from threadobj import Synchrom
+from synchrom import Synchrom
 import argparse
 import os #For os.access.
 import re 
@@ -37,15 +37,16 @@ if __name__ == '__main__':
                         help=('List of arguments specifying tumor:normal'
                             ' filename pairs.'))
                                 
-    parser.add_argument('-M', '--mutectopts', type=str, nargs='*',
+    parser.add_argument('-M', '--mutectopts', type=str,
                         help='Extra parameters specific to MuTect')
     #NOTE: Does specifying only the long option also give me a value for
-    #the short option?
+    #the short option? other NOTE: yes.
     parser.add_argument('-f', '--fasta', type=str,
                         help='FASTA formatted reference sequence',
                         required=True)
+    #Get the dictionary of command line arguments.
     args = parser.parse_args()
-    #NOTE: Either args.longargument or args.shortarg refers to the same
-    #argument when either the long option name or short option name is
-    #specified.
-    print(args.pairs)
+    args_dict = dict(args._get_kwargs())
+    #Test the Synchrom object. It works perfectly.
+    print args_dict
+    s = Synchrom(args)

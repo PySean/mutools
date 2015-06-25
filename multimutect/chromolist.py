@@ -5,6 +5,7 @@
     list of status arrays.
 """
 import sys
+from pysam import AlignmentFile
 from multiprocessing import Array
 
 """
@@ -60,12 +61,17 @@ class ChromoList():
         self.status_arrays = self._make_arrays_(len(self.chromosomes), 
                                                   pair_len)
 
-    #Generates a tuple of chromosomes M thru Y (there are 25 of them)
-    def _make_chromosomes_(self):
+    #FIXME: Now is generalized for any kind of genomic data. 
+    #filename: The name of a BAM file.
+    def _make_chromosomes_(self, filename):
+        with AlignmentFile(filename, 'rb') as bamfile:
+            return bamfile.references
+        """
         biff = ['chrM']
         biff.extend(['chr{}'.format(i) for i in range(1, 23)])
         biff.extend(['chrX', 'chrY'])
         return tuple(biff)
+        """
 
     #Stores several thread-safe Array objects in the list.
     def _make_arrays_(self, chr_len, pair_len):
