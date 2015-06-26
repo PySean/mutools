@@ -7,10 +7,6 @@
 import sys
 from pysam import AlignmentFile
 from multiprocessing import Array
-#TODO: Shift from processing everything all at once, to one file at a time.
-#I don't know why I did everything at one time in the first place...
-#TODO: Unless I'm going to use the status arrays for logging, I can make
-#do with just one array...I probably *should* log.
 """
 Function decorator for the methods get_chrostatus and set_chrostatus.
 Catches an IndexError and prints out relevant debug information.
@@ -49,15 +45,6 @@ class ChromoList():
     BUSY = 1
     DONE = 2
     ERROR = -1
-
-    #FIXME: Since I have moved from the "store everything" approach to a 
-    #reasonable approach, I need to use dictionaries instead of lists so I
-    #can have each thread access the tuple of chromosomes/list of 
-    #statuses it needs. The dictionaries will associate the sample # I
-    #am on with the chromosome-tuple or status array. Each thread will
-    #safely remove an unneeded item from the dictionary when all threads
-    #have completed their work on a sampleset (i.e. when all status array
-    #elements are DONE for the set.).
 
     #TODO: Since there is no benefit to maintaining two shifting
     #dictionaries other than logging purposes, I am going to

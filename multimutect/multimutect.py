@@ -5,7 +5,7 @@
 """
 from synchrom import Synchrom
 import argparse
-import os #For os.access.
+import os #For os.access()
 import re 
 import subprocess
 import sys
@@ -17,8 +17,6 @@ except ImportError as I:
 
 def thread_run(t_number, t_object):
     pass
-###TODO:Remember to use regular expressions to get at the normal/tumor BAM
-#file names.
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='MuTect parallelizer')
@@ -39,14 +37,12 @@ if __name__ == '__main__':
                                 
     parser.add_argument('-M', '--mutectopts', type=str,
                         help='Extra parameters specific to MuTect')
-    #NOTE: Does specifying only the long option also give me a value for
-    #the short option? other NOTE: yes.
     parser.add_argument('-f', '--fasta', type=str,
                         help='FASTA formatted reference sequence',
                         required=True)
     #Get the dictionary of command line arguments.
     args = parser.parse_args()
     args_dict = dict(args._get_kwargs())
-    #Test the Synchrom object. It works perfectly.
+    #This is simply for testing.
     print args_dict
     s = Synchrom(args)

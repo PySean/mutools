@@ -5,10 +5,6 @@
     from chrM, chr0-22, then chrX-chrY. The class also contains
     a "ChromoList" object that allows a thread to atomically
     get and set job statuses.
-
-    TODO: The ChromoList object may also be modified to also store 
-    a growing list of command line templates. This is in anticipation
-    of the redesign that doesn't use as much memory at once.
 """
 from chromolist import ChromoList
 import sys
@@ -41,60 +37,68 @@ class Synchrom():
     """
     chromolist = object()
     """
-    Requires a file handler pointing to a file with a list of tumor:{normal}
-    pathnames (fully qualified) or a list of files specified on the command
-    line as tumor.bam:{normal.bam} (the braces mean optional).
-    kwargs contains:
-    TODO: Put the following info in a separate markdown file.
-    -m
-    --mupath: The path to the mutect executable. This is optional, and
-    by default the file 'mutect.jar' from the current directory is used.
-
-    -b
-    --bamlistfile: If a file was specified (with the -f option), this is an open
-    file handler pointing to the file.
-
-    -p
-    --pairs: If the tumor:{normal} pairs were specified on the command line
-    directly with the -d option, this is a tuple of tumor:{normal} pairs.
-    The normal portion is not strictly necessary. This option and "fd"
-    are mutually exclusive, and at least one of them is required.
-
-    -r
-    --fasta: The name of the reference sequence file.
-
-    -M
-    --mutectopts: Extra parameters to MuTect to be concatenated
-    to the end of the string.
+    Information pertaining to core parameters that musn't be omitted.
+    These are:
+    fasta: fasta file name
+    mutectopts: optional arguments to be passed to MuTect
+    mupath: path to MuTect executable.
     """
+    fasta, mutectopts, mupath = (str(), str(), str())
+    """
+    Generator that retrieves commands by reading tumor:normal
+    pairs.
+    """
+    commands = iter()
     def __init__(self, cmd_args):
         self.chromolist = ChromoList()
-        tumor_normals = {}
+        self.fasta = cmd_args.fasta
+        self.mutectopts = cmd_args.mutectopts
+        self.mupath = cmd_args.mupath
         if cmd_args.bamlistfile is not None:
-            tumor_normals = self._parse_pairs_(cmd_args.bamlistfile, 
-                                               infile=True)
-        elif cmd_args.pairs is not None:
-            tumor_normals = self._parse_pairs_(cmd_args.pairs)
+            self.commands = self.get_command(cmd_args.bamlistfile, infile=True)
         else:
-            return None #At least one must be specified.
-        #Create the list of command strings from tumor/normal pairs,
-        #the specified reference sequence, and unrequired options for MuTect.
-        self.cmd_strings = self._build_commands_(tumor_normals,
-                                                 cmd_args.fasta,
-                                                 cmd_args.mutectopts,
-                                                 cmd_args.mupath)
+            self.commands = self.get_command(cmd_args.pair)
 
-    #TODO: Make this return one tumor:normal pair at a time.
-    #Only one line from the file should be read at a time.
-    #When a line is read, the underlying ChromoList object
-    #should add the chromosome tuple along with its status array.
+    """
+    Retrieves a single command corresponding to the tumor:normal
+    pair fetched from the file or command line with _get_pair_.
+    
+    fasta, mutectopts, and the path to MuTect are never changed
+    and needed only in the construction of the command, so I have made 
+    them instance variables instead.
+    """
+    def build_command(self, sample_pair):
+        tumor, normal = sample_pair
+        normal = normal.strip()
+        tumdir, normdir = tumor.split('.')[0] , normal.split('.')[0]
+        dirname = tumdir + normdir
+        if normal != '':
+            normal = '--input_file:normal ' + normal
+        #No possibility for tumor to equal '' as the calling function
+        #handles this case and returns None as a result.
+        tumor = '--input_file:tumor ' + tumor
+        #NOTE: It isn't necessary for me to insert the fasta,
+        #path, and option data every time as this is currently static.
+        #However, if I allow for a mix of species tumor:normal sample
+        #pairs, I will need to insert fasta as well.
+        cmd = self.cmd_template.format(fasta=self.fasta, normal=normal,
+                                           tumor=tumor, dirname=dirname,
+                                           mupath=self.mupath,
+                                           mutectopts=self.mutectopts)
+        return cmd
+
     """
     Parses a file or cmd line list into tumor:normal pairs. 
-    Returns a dictionary of tumor:normal values.
+    Returns a single command. Must be surrounded in a StopIteration
+    try/except. Returns None when a file isn't found or there is no
+    tumor sample in the pair.
+
+    This function also adds a chromosome set and status array
+    to the chromolist in this object, mapping the sample set to these
+    structures.
     """
-    def _parse_pairs_(self, sample_pairs, infile=False):
-        err_str = 'Error: argument {} has no tumor filename.\n'
-        samples = {}
+    def get_command(self, sample_pairs, infile=False):
+        err_str = 'Error: argument|line {} has no tumor filename.\n'
         line_number = 0
         if infile == True:
             try:
@@ -104,37 +108,13 @@ class Synchrom():
                                   ' Could not open file {}\n'
                                  ).format(sample_pairs))
                 return None
-        for arg in sample_pairs:
-            tumor, normal = arg.split(':')
+        for pair in sample_pairs:
+            tumor, normal = pair.split(':')
             if tumor == '':
                 sys.stderr.write(err_str.format(line_number))
                 return None
-            samples[tumor] = normal
             line_number += 1
+            self.chromolist.add_chrom_and_array(tumor)
+            yield self.build_command(pair)
         if infile == True:
             sample_pairs.close()
-        return samples
-
-    #TODO: fix to only return one command...
-    """
-    Builds up the list of command strings. There is one for each
-    tumor, normal pair. The auxiliary strings are above.
-    """
-    def _build_commands_(self, tumor_normals, fasta, mutectopts, 
-                         mupath='mutect.jar'):
-        cmds = list(range(0, len(tumor_normals)))
-        i = 0
-        print(str(tumor_normals)) #DEBUG
-        for tumor, normal in tumor_normals.iteritems():
-            normal = normal.strip()
-            tumdir, normdir = tumor.split('.')[0] , normal.split('.')[0]
-            dirname = tumdir + normdir
-            normal = '--input_file:normal ' + normal
-            tumor = '--input_file:tumor ' + tumor
-            #dirname = "".join(tumdir)
-            cmds[i] = self.cmd_template.format(fasta=fasta, normal=normal,
-                                               tumor=tumor, dirname=dirname,
-                                               mupath=mupath,
-                                               mutectopts=mutectopts)
-            i += 1
-        return cmds
