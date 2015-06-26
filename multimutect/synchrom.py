@@ -36,6 +36,11 @@ class Synchrom():
     """
     status_arrays = list()
     """
+    The chromolist object for this class.
+    Acts as a sort of "state machine" for getting to the next sample.
+    """
+    chromolist = object()
+    """
     Requires a file handler pointing to a file with a list of tumor:{normal}
     pathnames (fully qualified) or a list of files specified on the command
     line as tumor.bam:{normal.bam} (the braces mean optional).
@@ -63,6 +68,7 @@ class Synchrom():
     to the end of the string.
     """
     def __init__(self, cmd_args):
+        self.chromolist = ChromoList()
         tumor_normals = {}
         if cmd_args.bamlistfile is not None:
             tumor_normals = self._parse_pairs_(cmd_args.bamlistfile, 
@@ -78,6 +84,10 @@ class Synchrom():
                                                  cmd_args.mutectopts,
                                                  cmd_args.mupath)
 
+    #TODO: Make this return one tumor:normal pair at a time.
+    #Only one line from the file should be read at a time.
+    #When a line is read, the underlying ChromoList object
+    #should add the chromosome tuple along with its status array.
     """
     Parses a file or cmd line list into tumor:normal pairs. 
     Returns a dictionary of tumor:normal values.
@@ -93,6 +103,7 @@ class Synchrom():
                 sys.stderr.write(('_parse_pairs_' 
                                   ' Could not open file {}\n'
                                  ).format(sample_pairs))
+                return None
         for arg in sample_pairs:
             tumor, normal = arg.split(':')
             if tumor == '':
@@ -104,6 +115,7 @@ class Synchrom():
             sample_pairs.close()
         return samples
 
+    #TODO: fix to only return one command...
     """
     Builds up the list of command strings. There is one for each
     tumor, normal pair. The auxiliary strings are above.
