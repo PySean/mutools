@@ -63,6 +63,14 @@ class ChromoList():
     status_arrays = dict()
 
     """
+    Unfortunately, I must maintain a list of directories to really know
+    where I will be outputting logging and chromosome order information
+    (for combining the variants later) after a tumor:normal sample pair
+    is finished getting processed.
+    """
+    dirlist = list()
+
+    """
     The latest sample number. _Not_ to be used in the indexing functions,
     only for adding chromosome/array pairs.
     """
@@ -85,7 +93,7 @@ class ChromoList():
         with AlignmentFile(bamname, 'rb') as bamfile:
             self.chromosomes[self.sample_num] = bamfile.references
             self.status_arrays[self.sample_num] = Array('i', 
-                                                    len(bamfile.references))
+                                                    len(self.chromosomes))
         self.sample_num += 1
 
     """
@@ -118,3 +126,32 @@ class ChromoList():
         status_arr.acquire()
         status_arr.get_obj()[chr_ndx] = status
         status_arr.release()
+
+    """
+    Logs all the information from the status array to a file
+    called "status.list" in the corresponding directory of 
+    vcf files.
+
+    Should only be used within a critical section, when all elements
+    of the status array are ERROR or DONE (In other words, when the current
+    sample pair has finished getting processed).
+    """
+    def log_status_and_chromosomes(self, sample_number):
+        dirname = self.dirlist[sample_number]
+        status_filename = os.path.join(dirname, 'status.list')
+        chromolist_filename = os.path.join(dirname, 'chrs.list')
+        #Output diagnostic information from MuTect runs
+        #If MuTect's stderr output is relatively small, that will be
+        #logged instead of "ERROR", with a pretty header as well.
+        with open(status_filename, 'w') as stat:
+            status_array = self.status_arrays[sample_number]
+            chromosome_list = self.chromosomes[sample_number]
+            str_status = {self.DONE: 'DONE', self.ERROR: 'ERROR'}
+            chr_number = 0
+            for status in status_array.get_obj():
+                stat.write(('The MuTect process on chromosome {}'
+                            ' completed as {}\n'
+                           ).format(chromosome_list[chr_number],
+                                    str_status[status]))
+        with open(chromolist_filename, 'w') as chromo:
+            chromo.write('\n'.join([c for c in chromosome_list]))
