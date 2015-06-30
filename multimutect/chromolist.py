@@ -41,17 +41,12 @@ class ChromoList():
     Status constants to be used when having a thread assign a status
     to an element within a status array.
     """
+    #NOTE: This is a stupid idea. Should be in the main program only.
     UNTOUCHED = 0
     BUSY = 1
     DONE = 2
     ERROR = -1
 
-    #TODO: Since there is no benefit to maintaining two shifting
-    #dictionaries other than logging purposes, I am going to
-    #add a logging mechanism for my program, basically take the
-    #status array and output "There was an error in <sample pair>, 
-    #chromosome n" or "Successful run for chromosome n" to a file
-    #in the output directory filled with the vcf files.
     """
     A dictionary of tuples used for simple command line construction.
     """
@@ -108,10 +103,10 @@ class ChromoList():
     @catch_index_error
     def get_chrostatus(self, sample_number, chr_ndx):
         status_arr = self.status_arrays[sample_number]
-        status_arr.acquire()
+        #status_arr.acquire()
         chr_set = self.chromosomes[sample_number][chr_ndx]
         curr_status = status_arr.get_obj()[chr_ndx]
-        status_arr.release()
+        #status_arr.release()
         return (chr_set, curr_status)
 
     """
@@ -123,9 +118,9 @@ class ChromoList():
     @catch_index_error
     def set_chrostatus(self, sample_number, chr_ndx, status):
         status_arr = self.status_arrays[sample_number]
-        status_arr.acquire()
+        #status_arr.acquire()
         status_arr.get_obj()[chr_ndx] = status
-        status_arr.release()
+        #status_arr.release()
 
     """
     Logs all the information from the status array to a file

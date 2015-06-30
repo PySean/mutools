@@ -5,7 +5,7 @@
 """
 from synchrom import Synchrom
 import argparse
-import os #For os.access()
+import os #For os.access() to check for file existence
 import re 
 import subprocess
 import sys
@@ -15,8 +15,42 @@ except ImportError as I:
     sys.stderr.write("Please import the required modules: {}\n".format(I))
 
 
+"""
+The big deal function of the entire program.
+Has the thread fork a MuTect process and wait for it to complete.
+Once this occurs, the thread then acquires a lock on the current
+status array and assigns the appropriate exit status of the process
+to it. Once a thread returns when all elements of the status
+array are DONE, ERROR, or BUSY, the thread creates the data structures
+and directory for the next input tumor:normal pair, then goes to
+work on the <t_number>'th chromosome.
+"""
 def thread_run(t_number, t_object):
-    pass
+    #The exact chromosome / status array I am working on
+    counter = 0 + t_number
+    #The chromosome set / status array / dir number I am working with.
+    sample_number = 0
+    #Alright, the looping condition is weird. And bad.
+    while True:
+        status_array = synchrom.chromolist.status_arrays[sample_number]
+        status = synchrom.chromolist.DONE #NOTE: Placeholder.
+        status_array.acquire()
+        chromo, stat = synchrom.chromolist.get_chrostatus(sample_number, 
+                                                          counter)
+        if stat == synchrom.chromolist.UNTOUCHED:
+            synchrom.chromolist.set_chrostatus(sample_number, counter, status)
+            status_array.release()
+        elif all([(i ==   :
+            
+        cmd_template = t_object.cmd_strings[chromo_num]
+        #chromosome = t_object.chromolist.chromosomes[chromo_num][counter]
+        command = cmd_template % (chromosome, '/' + chromosome)
+        #status = subprocess.check_call(t_object.cmdlist[chromo_num]
+        #One improvement: Get rid of locking mechanisms in 
+        #chromolist, lock/unlock explicitly in thread instead.
+        status_array.acquire()
+        synchrom.chromolist.set_chrostatus(sample_number, counter, status)
+        #if all([synchrom.chromolist.status_array
 
 """
 Diagnostic function for the program.
@@ -31,6 +65,7 @@ def diagnostic(synchrom):
                ' The directory I am writing to is {}\n'
                ' The filenames will be named after chromosomes: {}\n'
               ).format(item, dirname, chromosomes))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='MuTect parallelizer')
@@ -64,3 +99,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     args_dict = dict(args._get_kwargs())
     diagnostic(Synchrom(args))
+    #Create the threads, then get the party started!

@@ -78,6 +78,10 @@ class Synchrom():
             except OSError as O:
                 sys.stderr.write('Error: could not create directory: %s' % O)
                 return None
+        #Attain first command, as well as initialize chromosomes & array.
+        if next(self.commands, None) is None:
+            sys.stderr.write('Error: no more commands.\n')
+            sys.exit(1)
     """
     Parses a file or cmd line list into tumor:normal pairs. 
     Returns a single command. Must be surrounded in a StopIteration
@@ -121,12 +125,15 @@ class Synchrom():
 
     Creates a directory (inside output directory) of the form tumor_normal, 
     with the .bam file extensions truncated.
+
+    Adds the command line to the cmd_strings list.
     """
     def build_command(self, sample_pair):
         tumor, normal = sample_pair
         #The directory of vcf files is <tumorbasename>_<normalbasename>,
         #within the parent output directory
         tumdir, normdir = tumor.split('.')[0] , normal.split('.')[0]
+        #NOTE: Currently appends '_' to the tumor only directory name.
         dirname = os.path.join(self.outputdir, (tumdir + '_' + normdir))
         os.mkdir(dirname)
         self.chromolist.add_chrom_and_array(os.path.join(self.inputdir, tumor))
@@ -144,4 +151,5 @@ class Synchrom():
                                            tumor=tumor, dirname=dirname,
                                            mupath=self.mupath,
                                            mutectopts=self.mutectopts)
+        self.cmd_strings.append(cmd)
         return cmd
