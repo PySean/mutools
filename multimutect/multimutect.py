@@ -5,7 +5,7 @@
 """
 from synchrom import Synchrom
 import argparse
-import os #For os.access() to check for file existence
+import os #For os.path.exists() to check for file existence
 import re 
 import subprocess
 import sys
@@ -25,32 +25,9 @@ array are DONE, ERROR, or BUSY, the thread creates the data structures
 and directory for the next input tumor:normal pair, then goes to
 work on the <t_number>'th chromosome.
 """
-def thread_run(t_number, t_object):
-    #The exact chromosome / status array I am working on
-    counter = 0 + t_number
-    #The chromosome set / status array / dir number I am working with.
-    sample_number = 0
-    #Alright, the looping condition is weird. And bad.
-    while True:
-        status_array = synchrom.chromolist.status_arrays[sample_number]
-        status = synchrom.chromolist.DONE #NOTE: Placeholder.
-        status_array.acquire()
-        chromo, stat = synchrom.chromolist.get_chrostatus(sample_number, 
-                                                          counter)
-        if stat == synchrom.chromolist.UNTOUCHED:
-            synchrom.chromolist.set_chrostatus(sample_number, counter, status)
-            status_array.release()
-        elif all([(i ==   :
-            
-        cmd_template = t_object.cmd_strings[chromo_num]
-        #chromosome = t_object.chromolist.chromosomes[chromo_num][counter]
-        command = cmd_template % (chromosome, '/' + chromosome)
-        #status = subprocess.check_call(t_object.cmdlist[chromo_num]
-        #One improvement: Get rid of locking mechanisms in 
-        #chromolist, lock/unlock explicitly in thread instead.
-        status_array.acquire()
-        synchrom.chromolist.set_chrostatus(sample_number, counter, status)
-        #if all([synchrom.chromolist.status_array
+#TODO: Start fresh.
+def thread_run(t_number, synchrom, chromolist):
+    pass
 
 """
 Diagnostic function for the program.
@@ -59,12 +36,11 @@ Takes a Synchrom object and returns None.
 """
 def diagnostic(synchrom):
     for item in synchrom.commands:
-        dirname = synchrom.chromolist.dirlist[-1]
-        chromosomes = synchrom.chromolist.chromosomes[0]
+        dirname = synchrom.output_dirs[-1]
         print(('My command is {}\n'
                ' The directory I am writing to is {}\n'
-               ' The filenames will be named after chromosomes: {}\n'
-              ).format(item, dirname, chromosomes))
+               #' The filenames will be named after chromosomes: {}\n'
+              ).format(item, dirname))
 
 
 if __name__ == '__main__':

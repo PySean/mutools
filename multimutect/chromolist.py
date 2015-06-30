@@ -92,7 +92,7 @@ class ChromoList():
         self.sample_num += 1
 
     """
-    Atomically retrieves a tuple composed of the chromosome string and status.
+    Retrieves a tuple composed of the chromosome string and status.
     This will allow a thread to know whether another thread is working
     on a chromosome or not, as well as format the string for subprocess
     if the chromosome is untouched.
@@ -103,14 +103,12 @@ class ChromoList():
     @catch_index_error
     def get_chrostatus(self, sample_number, chr_ndx):
         status_arr = self.status_arrays[sample_number]
-        #status_arr.acquire()
         chr_set = self.chromosomes[sample_number][chr_ndx]
         curr_status = status_arr.get_obj()[chr_ndx]
-        #status_arr.release()
         return (chr_set, curr_status)
 
     """
-    Atomically sets the desired status array element to the specified
+    Sets the desired status array element to the specified
     status.
     sample_number & chr_ndx: see above
     status: One of the values UNTOUCHED, BUSY, DONE or ERROR.
@@ -118,9 +116,7 @@ class ChromoList():
     @catch_index_error
     def set_chrostatus(self, sample_number, chr_ndx, status):
         status_arr = self.status_arrays[sample_number]
-        #status_arr.acquire()
         status_arr.get_obj()[chr_ndx] = status
-        #status_arr.release()
 
     """
     Logs all the information from the status array to a file
