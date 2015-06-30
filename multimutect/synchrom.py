@@ -1,27 +1,17 @@
 #!/usr/bin/env python
 """
     "synchrom.py", by Sean Soderman
-    Implements a class wrapping a tuple of chromosomes
-    from chrM, chr0-22, then chrX-chrY. The class also contains
-    a "ChromoList" object that allows a thread to atomically
-    get and set job statuses.
+    Implements a class that does pathname and directory
+    bookkeeping, as well as building & storing command line templates.
 """
-from chromolist import ChromoList
 import os
 import sys
 
 
 class Synchrom():
-    '''
-    cmd_template = 'java -Xmx2g -jar {mupath} --analysis_type MuTect \
---showFullBamList --reference_sequence {fasta} {normal} {tumor} \
---intervals %s -vcf {dirname}%s {mutectopts}'
-    '''
-    #TODO: Store the path to the directory inside the output directory
-    #somewhere (for the logging and stuff).
-    cmd_template = 'java -Xmx2g -jar {mupath} --analysis_type MuTect \
---showFullBamList --reference_sequence {fasta} {{normal}} {{tumor}} \
---intervals %s -vcf {{filedir}}%s {mutectopts}'
+    cmd_template = ('java -Xmx2g -jar {mupath} --analysis_type MuTect'
+    ' --showFullBamList --reference_sequence {fasta} {{normal}} {{tumor}}'
+    ' --intervals %s -vcf {{filedir}}%s {mutectopts}')
     """
     List containing a command line template for each thread.#
     The command leaves out the '--intervals <chr>' portion as a %s
@@ -33,8 +23,13 @@ class Synchrom():
     List containing the output directories of each sample.
     Required due to logging and chromosome index output
     mechanisms (their output goes in here).
+
+    The input list is required by add_chrom_and_array, as each pair
+    will have a (possibly) different chromosome listing.
     """
+    input_dirs = list()
     output_dirs = list()
+
 
     """
     The name of the directory that will contain the output directories.
@@ -54,7 +49,9 @@ class Synchrom():
         mutectopts = cmd_args.mutectopts
         mupath = cmd_args.mupath
         #Insert the stuff that won't change into the cmd template.
-        self.cmd_template = self.cmd_template.format(fasta=fasta, mutectopts=mutectopts, mupath=mupath)
+        self.cmd_template = self.cmd_template.format(fasta=fasta, 
+                                                    mutectopts=mutectopts,
+                                                    mupath=mupath)
 
         self.outputdir = cmd_args.outputdir
         self.inputdir = cmd_args.inputdir
@@ -95,22 +92,13 @@ class Synchrom():
     """
     Retrieves a single command corresponding to the tumor:normal
     pair fetched from the file or command line with get_pair.
-    
+
     fasta, mutectopts, and the path to MuTect are never changed
     and needed only in the construction of the command, so I have made 
     them a part of the original command.
 
-    ***REMOVE ALL SIDE EFFECTS*** (implement them elsewhere now)
-
-    Side effects:
-    
-    Adds the chromosomes, status array, and output directory name
-    to their respective structures in the ChromoList object.
-
-    Creates a directory (inside output directory) of the form tumor_normal, 
-    with the .bam file extensions truncated.
-
-    Adds the command line to the cmd_strings list.
+    Adds the output directory to the output_dirs list, input directory to
+    the input_dirs list, and the command line to the cmd_strings list.
     """
     def build_command(self, sample_pair):
         tumor, normal = sample_pair
@@ -127,6 +115,7 @@ class Synchrom():
         #No possibility for tumor to equal '' as the calling function
         #handles this case and returns None as a result.
         tumor = os.path.join(self.inputdir, tumor)
+        self.input_dirs.append(tumor)
         tumor = '--input_file:tumor ' + tumor
         cmd = self.cmd_template.format(normal=normal, tumor=tumor, 
                                        filedir=sample_out)

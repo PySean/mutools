@@ -18,7 +18,12 @@ def catch_index_error(func):
         except IndexError as I:
             #The first argument is the sample number, second is the
             #chromosome index.
-            array_number, cell_and_chromo = args[0:2]
+            array_number = None
+            cell_and_chromo = None
+            if len(args) >= 2:
+                array_number, cell_and_chromo = args[0:2]
+            else:
+                array_number = args[0]
             chromo_str = self.chromosomes[cell_and_chromo]
             sys.stderr.write(('An attempt to access Status array no. {array}'
                               ' status cell/chromosome no. {cell} and' 
@@ -32,16 +37,9 @@ def catch_index_error(func):
 
 class ChromoList():
     """
-    A class that tightly couples a tuple of chromosome strings
-    with a list of arrays containing statuses corresponding 
-    to each chromosome.
-    """
-
-    """
     Status constants to be used when having a thread assign a status
     to an element within a status array.
     """
-    #NOTE: This is a stupid idea. Should be in the main program only.
     UNTOUCHED = 0
     BUSY = 1
     DONE = 2
@@ -56,15 +54,7 @@ class ChromoList():
     A dictionary of status arrays.
     """
     status_arrays = dict()
-
-    """
-    Unfortunately, I must maintain a list of directories to really know
-    where I will be outputting logging and chromosome order information
-    (for combining the variants later) after a tumor:normal sample pair
-    is finished getting processed.
-    """
-    dirlist = list()
-
+    
     """
     The latest sample number. _Not_ to be used in the indexing functions,
     only for adding chromosome/array pairs.
@@ -119,6 +109,15 @@ class ChromoList():
         status_arr.get_obj()[chr_ndx] = status
 
     """
+    Checks if all statuses in the specified status array are DONE
+    or ERROR.
+    """
+    @catch_index_error
+    def will_log(self, sample_number):
+        statuses = self.status_arrays[sample_number].get_obj()
+        return all([(i == self.DONE) or (i == self.ERROR) for i in statuses])
+
+    """
     Logs all the information from the status array to a file
     called "status.list" in the corresponding directory of 
     vcf files.
@@ -126,9 +125,10 @@ class ChromoList():
     Should only be used within a critical section, when all elements
     of the status array are ERROR or DONE (In other words, when the current
     sample pair has finished getting processed).
+    output_dir: the directory the log and chromosome index will go.
     """
-    def log_status_and_chromosomes(self, sample_number):
-        dirname = self.dirlist[sample_number]
+    def log_status_and_chromosomes(self, output_dir):
+        dirname = output_dir
         status_filename = os.path.join(dirname, 'status.list')
         chromolist_filename = os.path.join(dirname, 'chrs.list')
         #Output diagnostic information from MuTect runs
