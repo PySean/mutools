@@ -27,7 +27,7 @@ def catch_index_error(func):
     def wrap(self, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
-        except IndexError as I:
+        except KeyError as K:
             #The first argument is the sample number, second is the
             #chromosome index.
             array_number = None
@@ -40,16 +40,14 @@ def catch_index_error(func):
             sys.stderr.write(('An attempt to access Status array no. {array}'
                               ' status cell/chromosome no. {cell} and' 
                               ' chromosome {chr} was made in function {func}:'
-                              '{I}\n'
+                              '{K}\n'
                              ).format(array = array_number, 
                                       cell = cell_and_chromo,
                                       chr = chromo_str, 
-                                      func=func.func_name, I=I))
+                                      func=func.func_name, K=K))
     return wrap
 
 class ChromoList():
-
-
     """
     A dictionary of tuples used for simple command line construction.
     """
@@ -83,7 +81,7 @@ class ChromoList():
         with AlignmentFile(bamname, 'rb') as bamfile:
             self.chromosomes[self.sample_num] = bamfile.references
             self.status_arrays[self.sample_num] = Array('i', 
-                                                    len(self.chromosomes))
+                                                len(bamfile.references))
         self.sample_num += 1
 
     """
