@@ -7,9 +7,21 @@
 import sys
 from pysam import AlignmentFile
 from multiprocessing import Array
+
+
+"""
+Status constants to be used when having a thread assign a status
+to an element within a status array.
+"""
+UNTOUCHED = 0
+BUSY = 1
+DONE = 2
+ERROR = -1
+
 """
 Function decorator for the methods get_chrostatus and set_chrostatus.
 Catches an IndexError and prints out relevant debug information.
+TODO: Change to KeyError since I switched to using dictionaries.
 """
 def catch_index_error(func):
     def wrap(self, *args, **kwargs):
@@ -36,14 +48,7 @@ def catch_index_error(func):
     return wrap
 
 class ChromoList():
-    """
-    Status constants to be used when having a thread assign a status
-    to an element within a status array.
-    """
-    UNTOUCHED = 0
-    BUSY = 1
-    DONE = 2
-    ERROR = -1
+
 
     """
     A dictionary of tuples used for simple command line construction.
@@ -115,7 +120,37 @@ class ChromoList():
     @catch_index_error
     def will_log(self, sample_number):
         statuses = self.status_arrays[sample_number].get_obj()
-        return all([(i == self.DONE) or (i == self.ERROR) for i in statuses])
+        return all([(i == DONE) or (i == ERROR) for i in statuses])
+
+    """
+    Locks or unlocks the status array specified by the sample number.
+    Returns: None if the array does not exist.
+    """
+    def key_array(self, sample_number, action='lock'):
+        try:
+            if action == 'lock':
+                self.status_arrays[sample_number].acquire()
+            else:
+                self.status_arrays[sample_number].release()
+        except KeyError:
+            sys.stderr.write('Error, status array no. {} does not exist\n'
+                             .format(sample_number))
+
+    """
+    Checks all elements in the nth (sample_number'th) array
+    beginning from chr_ndx + 1 to the end of the array for the
+    UNTOUCHED status. 
+    Returns the index of this status. Returns None if nothing
+    is untouched.
+    """
+    def check_ahead(self, sample_number, chr_ndx):
+        statuses = self.status_arrays[sample_number].get_obj()
+        ahead_items = statuses[chr_ndx + 1:]
+        for i in range(chr_ndx + 1, len(statuses)):
+            if statuses[i] == UNTOUCHED:
+                return i
+        else:
+            return None
 
     """
     Logs all the information from the status array to a file
@@ -137,7 +172,7 @@ class ChromoList():
         with open(status_filename, 'w') as stat:
             status_array = self.status_arrays[sample_number]
             chromosome_list = self.chromosomes[sample_number]
-            str_status = {self.DONE: 'DONE', self.ERROR: 'ERROR'}
+            str_status = {DONE: 'DONE', ERROR: 'ERROR'}
             chr_number = 0
             for status in status_array.get_obj():
                 stat.write(('The MuTect process on chromosome {}'

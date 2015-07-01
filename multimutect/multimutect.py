@@ -3,7 +3,9 @@
     'multimutect.py', by Sean Soderman
     Parallelizer for MuTect.
 """
+from multiprocessing import Lock
 from synchrom import Synchrom
+from chromolist import UNTOUCHED, BUSY, DONE, ERROR, ChromoList
 import argparse
 import os #For os.path.exists() to check for file existence
 import re 
@@ -25,9 +27,53 @@ array are DONE, ERROR, or BUSY, the thread creates the data structures
 and directory for the next input tumor:normal pair, then goes to
 work on the <t_number>'th chromosome.
 """
-#TODO: Start fresh.
-def thread_run(t_number, synchrom, chromolist):
-    pass
+def thread_run(t_number, synchrom, chromolist, init_mutex):
+    #Preamble code. One thread initializes the objects.
+    counter = 0
+    sample_number = 0
+    chrom_len = 0 #NOTE TODO: Only getting the length for one thread.
+    init_mutex.acquire()
+    if len(synchrom.cmd_strings) == 0:
+        try:
+            synchrom.commands.next()
+        except StopIteration as S:
+            sys.stderr.write('Error: No commands to be executed: {}'.format(S))
+            return None
+        chromolist.add_chrom_and_array(synchrom.bam_inputs[0])
+        init_mutex.release()
+
+    #Initialize length. Should always work as long as the above if executed.
+    chrom_len = len(chromolist.chromosomes[sample_number])
+    #The main event. Stop when there's no more chromosomes to process.
+    while True:
+        if (counter + t_number) < chrom_len:
+            counter += t_number
+        else:
+            chromolist.key_array(sample_number, action='lock')
+            counter = chromolist.check_ahead(sample_number, counter)
+            if counter is None: #Nothing left to fork for this sample
+                #Create the new status array if it does not exist.
+                if chromolist.status_arrays.get(sample_number) is None:
+                    chromolist.add_chrom_and_array(
+                                        synchrom.bam_inputs[sample_number])
+                #If everything is finished, log statuses + chromosomes.
+                elif chromolist.will_log(sample_number):
+                    chromolist.log_status_and_chromosomes(
+                                        synchrom.output_dirs[sample_number])
+                #Increment sample number, reset counter.
+                sample_number += 1
+                counter = t_number
+                chrom_len = len(chromolist.chromosomes[sample_number])
+                chromolist.key_array(sample_number, action='unlock')
+                
+        chromolist.key_array(sample_number, action='lock')
+        chrostr, status = chromolist.get_chrostatus(sample_number, counter)
+        if status == UNTOUCHED:
+            chromolist.set_chrostatus(sample_number, counter, BUSY)
+            the_command = synchrom.cmd_strings[sample_number] % (chrostr, 
+                                                                chrostr)
+            chromolist.key_array(sample_number, action='unlock')
+            #exec_command(the_command)
 
 """
 Diagnostic function for the program.

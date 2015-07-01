@@ -6,6 +6,7 @@
 """
 import os
 import sys
+from multiprocessing import Lock
 
 
 class Synchrom():
@@ -27,7 +28,7 @@ class Synchrom():
     The input list is required by add_chrom_and_array, as each pair
     will have a (possibly) different chromosome listing.
     """
-    input_dirs = list()
+    bam_inputs = list()
     output_dirs = list()
 
 
@@ -98,7 +99,7 @@ class Synchrom():
     them a part of the original command.
 
     Adds the output directory to the output_dirs list, input directory to
-    the input_dirs list, and the command line to the cmd_strings list.
+    the bam_inputs list, and the command line to the cmd_strings list.
     """
     def build_command(self, sample_pair):
         tumor, normal = sample_pair
@@ -115,7 +116,7 @@ class Synchrom():
         #No possibility for tumor to equal '' as the calling function
         #handles this case and returns None as a result.
         tumor = os.path.join(self.inputdir, tumor)
-        self.input_dirs.append(tumor)
+        self.bam_inputs.append(tumor)
         tumor = '--input_file:tumor ' + tumor
         cmd = self.cmd_template.format(normal=normal, tumor=tumor, 
                                        filedir=sample_out)
