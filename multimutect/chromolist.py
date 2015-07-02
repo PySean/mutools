@@ -4,6 +4,7 @@
     An object that tightly couples the tuple of chromosomes with the
     list of status arrays.
 """
+import os
 import sys
 from pysam import AlignmentFile
 from multiprocessing import Array
@@ -23,7 +24,7 @@ Function decorator for the methods get_chrostatus and set_chrostatus.
 Catches an IndexError and prints out relevant debug information.
 TODO: Change to KeyError since I switched to using dictionaries.
 """
-def catch_index_error(func):
+def catch_key_error(func):
     def wrap(self, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
@@ -93,7 +94,7 @@ class ChromoList():
     pair.
     chr_ndx: Index specifying chromosome string and status element.
     """
-    @catch_index_error
+    @catch_key_error
     def get_chrostatus(self, sample_number, chr_ndx):
         status_arr = self.status_arrays[sample_number]
         chr_set = self.chromosomes[sample_number][chr_ndx]
@@ -106,7 +107,7 @@ class ChromoList():
     sample_number & chr_ndx: see above
     status: One of the values UNTOUCHED, BUSY, DONE or ERROR.
     """
-    @catch_index_error
+    @catch_key_error
     def set_chrostatus(self, sample_number, chr_ndx, status):
         status_arr = self.status_arrays[sample_number]
         status_arr.get_obj()[chr_ndx] = status
@@ -115,7 +116,9 @@ class ChromoList():
     Checks if all statuses in the specified status array are DONE
     or ERROR.
     """
-    @catch_index_error
+    #TODO: Check for bad interactions between this function and its
+    #decorator. Make sure the log function works as well.
+    @catch_key_error
     def will_log(self, sample_number):
         statuses = self.status_arrays[sample_number].get_obj()
         return all([(i == DONE) or (i == ERROR) for i in statuses])
@@ -160,7 +163,7 @@ class ChromoList():
     sample pair has finished getting processed).
     output_dir: the directory the log and chromosome index will go.
     """
-    def log_status_and_chromosomes(self, output_dir):
+    def log_status_and_chromosomes(self, output_dir, sample_number):
         dirname = output_dir
         status_filename = os.path.join(dirname, 'status.list')
         chromolist_filename = os.path.join(dirname, 'chrs.list')
@@ -177,5 +180,6 @@ class ChromoList():
                             ' completed as {}\n'
                            ).format(chromosome_list[chr_number],
                                     str_status[status]))
+                chr_number += 1
         with open(chromolist_filename, 'w') as chromo:
             chromo.write('\n'.join([c for c in chromosome_list]))

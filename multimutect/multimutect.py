@@ -3,7 +3,6 @@
     'multimutect.py', by Sean Soderman
     Parallelizer for MuTect.
 """
-#from multiprocessing import Lock, cpu_count
 from synchrom import Synchrom
 from chromolist import UNTOUCHED, BUSY, DONE, ERROR, ChromoList
 import argparse
@@ -13,7 +12,7 @@ import re
 import subprocess
 import sys
 try:
-    from concurrent.futures import ThreadPoolExecutor 
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 except ImportError as I:
     sys.stderr.write("Please import the required modules: {}\n".format(I))
 
@@ -28,7 +27,6 @@ array are DONE, ERROR, or BUSY, the thread creates the data structures
 and directory for the next input tumor:normal pair, then goes to
 work on the <t_number>'th chromosome.
 """
-#TODO FIXME NOTE: Chromosomes 19, 21, 22, and X were omitted.
 def thread_run(t_number, num_t, synchrom, chromolist, init_mutex):
     counter = t_number
     sample_number = 0
@@ -36,7 +34,6 @@ def thread_run(t_number, num_t, synchrom, chromolist, init_mutex):
     ##Critical section no. 1##
     #Create initial data structures and directory for 1st sample pair.
     init_mutex.acquire()
-    #The memory is indeed, shared. (or is it?)
     if len(synchrom.cmd_strings) == 0:
         try:
             synchrom.commands.next()
@@ -57,12 +54,9 @@ def thread_run(t_number, num_t, synchrom, chromolist, init_mutex):
                              chromolist.status_arrays[sample_number].get_obj()[:],
                              chromolist.chromosomes[sample_number]))
     #The main event. Stop when there's no more chromosomes to process.
-    #TODO: Counter never changes for thread #0!
     while True:
-        #if (counter + num_t) < chrom_len:
-        #    counter += num_t
         if counter >= chrom_len:
-            sys.stderr.write('Do I get here?\n')
+            counter = counter - t_number
             ##Critical section no. 2##
             #Check statuses, create missing data structures.
             chromolist.key_array(sample_number, action='lock')
@@ -75,6 +69,7 @@ def thread_run(t_number, num_t, synchrom, chromolist, init_mutex):
                     try:
                         synchrom.commands.next()
                     except StopIteration as S:
+                        chromolist.key_array(sample_number, action='unlock')
                         return DONE
                     try:
                         os.mkdir(synchrom.output_dirs[sample_number + 1])
@@ -83,38 +78,42 @@ def thread_run(t_number, num_t, synchrom, chromolist, init_mutex):
                                         .format(O))
                     chromolist.add_chrom_and_array(
                                         synchrom.bam_inputs[sample_number + 1])
-                #will_log is only true when all threads are done with a sample.
-                #This is why I log here.
-                elif chromolist.will_log(sample_number):
-                    chromolist.log_status_and_chromosomes(
-                                        synchrom.output_dirs[sample_number])
+
+                chromolist.key_array(sample_number, action='unlock')
                 #This thread is moving on, so do its variables.
                 sample_number += 1
                 counter = t_number
                 chrom_len = len(chromolist.chromosomes[sample_number])
-            chromolist.key_array(sample_number, action='unlock')
+            #Need to get this to happen either when my counter is none or
+            #not.
+            else:
+                chromolist.key_array(sample_number, action='unlock')
                 
         ##Critical section no. 3##
         #Getting/Setting status then forking.
-        #sys.stderr.write('I am thread {}\n'.format(t_number))
-        #FIXME: This is where all the other threads get stuck.
         chromolist.key_array(sample_number, action='lock')
         chrostr, status = chromolist.get_chrostatus(sample_number, counter)
         exit_status = DONE
         if status == UNTOUCHED:
             chromolist.set_chrostatus(sample_number, counter, BUSY)
             the_command = synchrom.cmd_strings[sample_number] % (chrostr, 
-                                                                chrostr)
+                                                            chrostr + '.vcf')
             chromolist.key_array(sample_number, action='unlock')
-            ##TODO: Check what MuTect returns on error.
-            #ACTUALLY unnecessary as CalledProcessError exists.
             try:
                 subprocess.check_output(the_command.split())
             except subprocess.CalledProcessError as cpe:
                 exit_status = ERROR
             chromolist.key_array(sample_number, action='lock')
             chromolist.set_chrostatus(sample_number, counter, exit_status)
+            #Are all threads completely finished with this sample?
+            if chromolist.will_log(sample_number):
+                chromolist.log_status_and_chromosomes(
+                                        synchrom.output_dirs[sample_number],
+                                        sample_number)
             chromolist.key_array(sample_number, action='unlock')
+        #NOTE: Without this, there was potential for a double lock on the same array.
+        else:
+            chromolist.key_array(sample_number, action='unlock')   
         counter += num_t
 
 """
@@ -168,6 +167,7 @@ if __name__ == '__main__':
     #Create the threads and the parent output directory.
     numthreads = multiprocessing.cpu_count() // 2
     os.mkdir(args.outputdir)
+    #Get the the threads going. Output debug info to thread-specific files.
     with ThreadPoolExecutor(max_workers=numthreads) as threader:
         synchrom = Synchrom(args)
         chromolist = ChromoList()
@@ -175,11 +175,17 @@ if __name__ == '__main__':
         jobs = {threader.submit(thread_run, i, numthreads, synchrom, 
                                 chromolist, init_mutex): i 
                                 for i in range(0, numthreads)}
-        for future in concurrent.futures.as_completed(jobs.keys()):
+        for future in as_completed(jobs.keys()):
             threadnum = jobs[future]
             result = 0
             try:
                 result = future.result()
             except Exception as E:
-                print('Thread {} terminated abnormally: {}'.format(threadnum,
-                                                                   E))
+                print('Thread {} terminated abnormally: {}'
+                      .format(threadnum,E))
+
+            with open('thread{}.status'.format(threadnum), 'w') as ts:
+                if result == DONE:
+                    ts.write('I completed successfully!\n')
+                else:
+                    ts.write('I completed unsuccessfully!\n')
