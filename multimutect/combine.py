@@ -10,18 +10,25 @@ from subprocess import check_output
 
 #TODO: Either insert this to the end of multimutect, or make it a true
 #standalone program with argparse.
-if len(sys.argv) < 4:
+if len(sys.argv) < 3:
     sys.stderr.write(('Usage: {} <directory> <reference>' 
-                      ' <outputfile> <gatkpath>\n').format(sys.argv[0]))
+                      ' [gatkpath]\n').format(sys.argv[0]))
     sys.exit(1)
 
+"""
+Validates the list of chromosome vcf file fragments. Removes paths that
+lead to files of size zero, or that do not exist.
+"""
+def chr_validate(chrlist):
+    fil_func = lambda x: os.stat(x).st_size != 0 and os.path.exists(x)
+    return filter(fil_func, chrlist)
 """
 Combines all vcfs under a directory. By default, does not remove the vcf files.
 At the moment, cleans up after multimutect.py with regards to the 
 creation of a status directory as well as moving status files up into
 said directory.
 """
-def vcf_combine(parent, reference, outfile='out', gatkpath='gatk.jar'):
+def vcf_combine(parent, reference, gatkpath='gatk.jar'):
     cmd = ('java -cp {gatk} org.broadinstitute.gatk.tools.CatVariants'
            ' -assumeSorted -R' 
            ' {ref} -out {{out}} {{vcfs}}').format(gatk=gatkpath, 
@@ -43,18 +50,21 @@ def vcf_combine(parent, reference, outfile='out', gatkpath='gatk.jar'):
                 with open(listing, 'r') as chrfile:
                     chrlist = [os.path.join(d_path, c.strip()) + '.vcf' 
                                for c in chrfile]
+                    #Keep original chrlist for deletions.
+                    realchrs = chr_validate(chrlist)
                     #The list of vcfs to concatenate, each prepended by
                     #-V.
-                    vseries = "".join(['-V ' + c + ' ' for c in chrlist])
+                    vseries = "".join(['-V ' + c + ' ' for c in realchrs])
                     final_cmd = cmd.format(out=outpath, vcfs=vseries)
                     check_output(final_cmd.split())
                     #Clean up leftover files after combining them.
                     #Also cleans up .idx files and directories.
                     map(os.unlink, chrlist)
-                    map(lambda x: os.unlink(x + '.idx'), chrlist)
+                    #No index file is created for empty vcfs.
+                    map(lambda x: os.unlink(x + '.idx'), realchrs)
                     os.unlink(listing)
-                    os.rmdir(d_path)
             if os.path.exists(statfile):
                 os.rename(statfile, os.path.join(statdir, status_name))
+                os.rmdir(d_path)
 
-vcf_combine(sys.argv[1], sys.argv[2], sys.argv[3])
+vcf_combine(sys.argv[1], sys.argv[2])
