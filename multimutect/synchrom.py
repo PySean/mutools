@@ -5,6 +5,7 @@
     bookkeeping, as well as building & storing command line templates.
 """
 import os
+import re
 import sys
 from multiprocessing import Lock
 
@@ -81,7 +82,7 @@ class Synchrom():
                                  ).format(sample_pairs))
                 yield None
         for pair in sample_pairs:
-            tumor, normal = pair.split(':')
+            tumor, normal = re.split('\s+', pair)
             normal = normal.strip()
             if tumor == '':
                 sys.stderr.write(err_str.format(line_number))
