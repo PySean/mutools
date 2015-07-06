@@ -7,7 +7,7 @@ from synchrom import Synchrom
 from chromolist import UNTOUCHED, BUSY, DONE, ERROR, ChromoList
 import argparse
 import multiprocessing
-import os #For os.path.exists() to check for file existence
+import os #For os.path.exists() to check for file existence and os.walk.
 import re 
 import subprocess
 import sys
@@ -146,7 +146,11 @@ if __name__ == '__main__':
     group.add_argument('-p', '--pairs', type=str, nargs='*',
                         help=('List of arguments specifying tumor:normal'
                             ' filename pairs.'))
-                                
+    #Not implemented *yet*
+    group.add_argument('-e', '--excel', type=str, nargs='*',
+                        help=('Excel spreadsheet containing the names'
+                            ' of the BAM files.'))
+
     parser.add_argument('-M', '--mutectopts', type=str, default='',
                         help='Extra parameters specific to MuTect')
     parser.add_argument('-f', '--fasta', type=str,

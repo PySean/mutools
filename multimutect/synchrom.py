@@ -68,6 +68,7 @@ class Synchrom():
     try/except. Returns None when a file isn't found or there is no
     tumor sample in the pair.
     """
+    #TODO: Add in Excel file compatibility.
     def get_command(self, sample_pairs, infile=False):
         err_str = 'Error: argument|line {} has no tumor filename.\n'
         line_number = 0
