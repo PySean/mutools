@@ -49,10 +49,6 @@ def thread_run(t_number, num_t, synchrom, chromolist, init_mutex):
     init_mutex.release()
     #Initialize length. Should always work as long as the above if executed.
     chrom_len = len(chromolist.chromosomes[sample_number])
-    sys.stderr.write('Thread {} sees this array: {} and these chromosomes: {}\n'
-                     .format(t_number, 
-                             chromolist.status_arrays[sample_number].get_obj()[:],
-                             chromolist.chromosomes[sample_number]))
     #The main event. Stop when there's no more chromosomes to process.
     while True:
         if counter >= chrom_len:

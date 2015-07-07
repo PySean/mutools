@@ -69,7 +69,6 @@ class Synchrom():
     try/except. Returns None when a file isn't found or there is no
     tumor sample in the pair.
     """
-    #TODO: Add in Excel file compatibility.
     def get_command(self, sample_pairs, infile=False):
         err_str = 'Error: argument|line {} has no tumor filename.\n'
         line_number = 0
@@ -82,6 +81,9 @@ class Synchrom():
                                  ).format(sample_pairs))
                 yield None
         for pair in sample_pairs:
+            #Skip header line
+            if not re.search('.*bam', pair):
+                continue
             tumor, normal = re.split('\s+', pair)
             normal = normal.strip()
             if tumor == '':

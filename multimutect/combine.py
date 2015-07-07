@@ -5,15 +5,26 @@
     file within the directory.
 """
 import os
-import sys
+import argparse
 from subprocess import check_output
 
-#TODO: Either insert this to the end of multimutect, or make it a true
-#standalone program with argparse.
-if len(sys.argv) < 3:
-    sys.stderr.write(('Usage: {} <directory> <reference>' 
-                      ' [gatkpath]\n').format(sys.argv[0]))
-    sys.exit(1)
+parser = argparse.ArgumentParser(description=('Combines the vcf files'
+                                              ' within the subdirectories'
+                                              ' created by multimutect.'))
+parser.add_argument('-d', '--directory', type=str,
+                    help='The output directory containing vcf files',
+                    required=True)
+
+parser.add_argument('-r', '--reference', type=str,
+                    help='The reference genome for the BAM files',
+                    required=True)
+
+parser.add_argument('-g', '--gatkpath', type=str,
+                    help=('The path to the gatk jar file. This looks for'
+                    ' gatk.jar in the current working directory by default')
+                   )
+
+args = parser.parse_args()
 
 """
 Validates the list of chromosome vcf file fragments. Removes paths that
@@ -67,4 +78,4 @@ def vcf_combine(parent, reference, gatkpath='gatk.jar'):
                 os.rename(statfile, os.path.join(statdir, status_name))
                 os.rmdir(d_path)
 
-vcf_combine(sys.argv[1], sys.argv[2])
+vcf_combine(args.directory, args.reference)
