@@ -80,8 +80,7 @@ def thread_run(t_number, num_t, synchrom, chromolist, init_mutex):
                 sample_number += 1
                 counter = t_number
                 chrom_len = len(chromolist.chromosomes[sample_number])
-            #Need to get this to happen either when my counter is none or
-            #not.
+            #This happens either when my counter is none or not.
             else:
                 chromolist.key_array(sample_number, action='unlock')
                 

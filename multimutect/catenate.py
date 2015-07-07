@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-    "combine.py", by Sean Soderman
-    Combines all vcfs under a directory in an order according to the chrs.list
-    file within the directory.
+    "catenate.py", by Sean Soderman
+    Concatenates all vcfs under a directory in an order 
+    according to the chrs.list file within the directory.
 """
 import os
 import argparse
@@ -39,7 +39,7 @@ At the moment, cleans up after multimutect.py with regards to the
 creation of a status directory as well as moving status files up into
 said directory.
 """
-def vcf_combine(parent, reference, gatkpath='gatk.jar'):
+def vcf_catenate(parent, reference, gatkpath='gatk.jar'):
     cmd = ('java -cp {gatk} org.broadinstitute.gatk.tools.CatVariants'
            ' -assumeSorted -R' 
            ' {ref} -out {{out}} {{vcfs}}').format(gatk=gatkpath, 
@@ -78,4 +78,10 @@ def vcf_combine(parent, reference, gatkpath='gatk.jar'):
                 os.rename(statfile, os.path.join(statdir, status_name))
                 os.rmdir(d_path)
 
-vcf_combine(args.directory, args.reference)
+if os.exists(args.gatkpath):
+    vcf_catenate(args.directory, args.reference, args.gatkpath)
+elif os.exists('gatk.jar')
+    vcf_catenate(args.directory, args.reference)
+else:
+    sys.stderr.write('Please provide an existent gatk jar filepath.')
+    sys.exit(1)
