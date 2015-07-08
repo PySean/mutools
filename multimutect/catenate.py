@@ -25,7 +25,8 @@ def chr_validate(chrlist):
     fil_func = lambda x: os.stat(x).st_size != 0 and os.path.exists(x)
     return filter(fil_func, chrlist)
 """
-Combines all vcfs under a directory. By default, does not remove the vcf files.
+Concatenates all vcfs under a directory. 
+By default, does not remove the vcf files.
 At the moment, cleans up after multimutect.py with regards to the 
 creation of a status directory as well as moving status files up into
 said directory.

@@ -49,8 +49,15 @@ def vcf_combine(directory, reference, outfile, gatkpath, delete, listing):
     vcfs = []
     if listing is not None:
         with open(listing, 'r') as bamlist:
-            vcfs = [x.strip() for x in bamlist if re.search('.bam\s*$', x)]
-            vcfs = map(lambda x: re.sub('.bam', '.vcf', x), vcfs)
+            bamonly = [x for x in bamlist if re.search('\.bam\s*$', x)]
+            #Make respective tumors/normals lists.
+            tumors, normals = zip(*[re.split('\t', x) for x in bamonly])
+            #Substitute .bam in the tumor element for an underscore
+            #and append the corresponding normal if y isn't blank, else
+            #just use the tumor filename.
+            vcfs = map(lambda x, y: (re.sub('.bam', '_', x) + y 
+            if not y.isspace() else x), tumors, normals)
+            vcfs = [x.strip() for x in vcfs]
     else:
         vcfs = filter(lambda x: x.endswith('.vcf'), os.listdir(directory))
 
@@ -66,5 +73,4 @@ def vcf_combine(directory, reference, outfile, gatkpath, delete, listing):
         sys.exit(1)
     if delete == True:
         map(lambda x: os.unlink(x), path_vcfs)
-
 vcf_combine(**vars(args))
