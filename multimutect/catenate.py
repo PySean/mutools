@@ -4,26 +4,17 @@
     Concatenates all vcfs under a directory in an order 
     according to the chrs.list file within the directory.
 """
-import os
 import argparse
+import os
 from subprocess import check_output
+try:
+    from arguer import makeparser
+except ImportError as I:
+    sys.stderr.write('Make sure arguer.py is in my working directory: {}'
+                         .format(I))
 
-parser = argparse.ArgumentParser(description=('Combines the vcf files'
-                                              ' within the subdirectories'
-                                              ' created by multimutect.'))
-parser.add_argument('-d', '--directory', type=str,
-                    help='The output directory containing vcf files',
-                    required=True)
-
-parser.add_argument('-r', '--reference', type=str,
-                    help='The reference genome for the BAM files',
-                    required=True)
-
-parser.add_argument('-g', '--gatkpath', type=str,
-                    help=('The path to the gatk jar file. This looks for'
-                    ' gatk.jar in the current working directory by default')
-                   )
-
+parser = makeparser(('Concatenates the vcf files within the subdirectories'
+                     ' created by multimutect.'))
 args = parser.parse_args()
 
 """
@@ -80,7 +71,7 @@ def vcf_catenate(parent, reference, gatkpath='gatk.jar'):
 
 if os.exists(args.gatkpath):
     vcf_catenate(args.directory, args.reference, args.gatkpath)
-elif os.exists('gatk.jar')
+elif os.exists('gatk.jar'):
     vcf_catenate(args.directory, args.reference)
 else:
     sys.stderr.write('Please provide an existent gatk jar filepath.')
