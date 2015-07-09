@@ -18,7 +18,6 @@ parser = makeparser('Combines all vcfs in a directory with CombineVariants')
 parser.add_argument('-o', '--outfile', type=str,
                     help='The resulting combined output file',
                     default='outfile.vcf')
-
 parser.add_argument('-D', '--delete', action='store_true',
                     help=('If this is supplied, delete all vcfs in the'
                     ' directory'))
@@ -26,6 +25,9 @@ parser.add_argument('-D', '--delete', action='store_true',
 parser.add_argument('-l', '--listing', type=str,
                     help=('If this is supplied, combine VCF files in the order'
                     'given in the listing file.'))
+parser.add_argument('-w', '--without_nonecol', action='store_true',
+                    help=('If this option is specified, the column containing'
+                          ' "none" will be omitted.'))
 
 args = parser.parse_args()
 
@@ -41,7 +43,8 @@ def vformat(filename):
 """
 Combines all vcfs in a directory with CombineVariants.
 """
-def vcf_combine(directory, reference, outfile, gatkpath, delete, listing):
+def vcf_combine(directory, reference, outfile, gatkpath, 
+                delete, listing, without_nonecol):
     cmd = ('java -jar {gatk} -T CombineVariants -R {ref}' 
            ' -nt 4 {{vcfs}} -o {outfile} --genotypemergeoption UNSORTED')
     cmd = cmd.format(gatk=gatkpath, ref=reference, outfile=outfile)
@@ -54,9 +57,11 @@ def vcf_combine(directory, reference, outfile, gatkpath, delete, listing):
             tumors, normals = zip(*[re.split('\t', x) for x in bamonly])
             #Substitute .bam in the tumor element for an underscore
             #and append the corresponding normal if y isn't blank, else
-            #just use the tumor filename.
-            vcfs = map(lambda x, y: (re.sub('.bam', '_', x) + y 
-            if not y.isspace() else x), tumors, normals)
+            #just use the tumor filename (.bam -> .vcf in either case)
+            vcfs = map(lambda tumor, normal: (re.sub('.bam', '_', tumor) + 
+                       re.sub('.bam', '.vcf', normal)
+                       if not normal.isspace() 
+                       else re.sub('.bam', '.vcf', tumor)), tumors, normals)
             vcfs = [x.strip() for x in vcfs]
     else:
         vcfs = filter(lambda x: x.endswith('.vcf'), os.listdir(directory))
@@ -73,4 +78,39 @@ def vcf_combine(directory, reference, outfile, gatkpath, delete, listing):
         sys.exit(1)
     if delete == True:
         map(lambda x: os.unlink(x), path_vcfs)
+    if without_nonecol is True:
+        rm_nonecol(outfile, 'newfile.vcf')
+"""
+Deletes the column called "none" in the resulting combined VCF.
+This results from tumor only samples being provided.
+Overwrites the vcf file with the new vcf file without the none column.
+"""
+def rm_nonecol(infile, noneless):
+    with open(infile, 'r') as orig, open(noneless, 'w') as new:
+        none_pos = -1
+        new_line = []
+        vcf_match = re.compile('\s*#*[0-9_a-zA-Z/.:;,=-]+')
+        for line in orig:
+            if re.match('##', line):
+                new.write(line)
+            else:
+                new_line = re.findall(vcf_match, line)
+
+            if re.match('#CHROM', line) and not re.search('none', line):
+                sys.stderr.write(("I am sorry, but you don't"
+                                  " even need to use this switch, as your file"
+                                  " has no 'none' column in it."))
+                os.unlink(noneless)
+                sys.exit(1)
+            elif re.search('#CHROM.*none', line):
+                none_pos = map(lambda x: x.strip(), new_line).index('none')
+            if none_pos != -1:
+                new_str = ''.join([x for x in new_line 
+                                  if new_line.index(x) != none_pos])
+                #Portable newline catenation if the newline was removed.
+                if not new_str.endswith(os.linesep):
+                    new_str += os.linesep
+                new.write(new_str)
+    #Replace the input file with the file omitting the none column.
+    os.rename(noneless, infile)
 vcf_combine(**vars(args))
