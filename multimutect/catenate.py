@@ -44,6 +44,9 @@ def vcf_catenate(parent, reference, gatkpath='gatk.jar'):
             d_path = os.path.join(dirpath, directory)
             listing = os.path.join(d_path, 'chrs.list')
             statfile = os.path.join(d_path, 'status.list')
+            #NOTE: An underscore is no longer at the end of the 
+            #directories. However I am going to leave this here just in
+            #case.
             result_name = directory.strip('_') + '.vcf'
             status_name = directory.strip('_') + '.list'
             outpath = os.path.join(dirpath, result_name)
@@ -70,7 +73,7 @@ def vcf_catenate(parent, reference, gatkpath='gatk.jar'):
                 os.rename(statfile, os.path.join(statdir, status_name))
                 os.rmdir(d_path)
 
-if os.exists(args.gatkpath):
+if os.path.exists(args.gatkpath):
     vcf_catenate(args.directory, args.reference, args.gatkpath)
 elif os.exists('gatk.jar'):
     vcf_catenate(args.directory, args.reference)

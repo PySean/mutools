@@ -46,7 +46,8 @@ Combines all vcfs in a directory with CombineVariants.
 def vcf_combine(directory, reference, outfile, gatkpath, 
                 delete, listing, without_nonecol):
     cmd = ('java -jar {gatk} -T CombineVariants -R {ref}' 
-           ' -nt 4 {{vcfs}} -o {outfile} --genotypemergeoption UNSORTED')
+           ' -nt 4 {{vcfs}} -o {outfile}'
+           ' -dcov 1000000 --genotypemergeoption UNSORTED')
     cmd = cmd.format(gatk=gatkpath, ref=reference, outfile=outfile)
     
     vcfs = []
@@ -100,7 +101,7 @@ def rm_nonecol(infile, noneless):
                 sys.stderr.write(("I am sorry, but you don't"
                                   " even need to use this switch, as your file"
                                   " has no 'none' column in it."))
-                os.unlink(noneless)
+                #os.unlink(noneless)
                 sys.exit(1)
             elif re.search('#CHROM.*none', line):
                 none_pos = map(lambda x: x.strip(), new_line).index('none')

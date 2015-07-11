@@ -3,8 +3,9 @@
     'multimutect.py', by Sean Soderman
     Parallelizer for MuTect.
 """
-from synchrom import Synchrom
 from chromolist import UNTOUCHED, BUSY, DONE, ERROR, ChromoList
+from itertools import izip
+from synchrom import Synchrom
 import argparse
 import multiprocessing
 import os #For os.path.exists() to check for file existence and os.walk.
@@ -157,6 +158,9 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--outputdir', type=str, default='output',
                         help=('The name of the directory the output should go'
                               ' to. Default: a directory called "output"'))
+    parser.add_argument('-w', '--whole', action='store_true',
+                        help=('Process the entire BAM file at once instead '
+                              'of single chromosomes at a time'))
     args = parser.parse_args()
     if not os.path.exists(args.mupath):
         sys.stderr.write('Error: path to {} does not exist\n'
@@ -164,27 +168,58 @@ if __name__ == '__main__':
         sys.exit(1)
     #diagnostic(Synchrom(args))
     #Create the threads and the parent output directory.
-    numthreads = multiprocessing.cpu_count() // 2
+    numthreads = multiprocessing.cpu_count() // 4
     os.mkdir(args.outputdir)
-    #Get the the threads going. Output debug info to thread-specific files.
-    with ThreadPoolExecutor(max_workers=numthreads) as threader:
-        synchrom = Synchrom(args)
-        chromolist = ChromoList()
-        init_mutex = multiprocessing.Lock()
-        jobs = {threader.submit(thread_run, i, numthreads, synchrom, 
-                                chromolist, init_mutex): i 
-                                for i in range(0, numthreads)}
-        for future in as_completed(jobs.keys()):
-            threadnum = jobs[future]
-            result = 0
-            try:
-                result = future.result()
-            except Exception as E:
-                print('Thread {} terminated abnormally: {}'
-                      .format(threadnum,E))
+    if args.whole != True:
+        #Get the the threads going. Output debug info to thread-specific files.
+        with ThreadPoolExecutor(max_workers=numthreads) as threader:
+            synchrom = Synchrom(args)
+            chromolist = ChromoList()
+            init_mutex = multiprocessing.Lock()
+            jobs = {threader.submit(thread_run, i, numthreads, synchrom, 
+                                    chromolist, init_mutex): i 
+                                    for i in range(0, numthreads)}
+            for future in as_completed(jobs.keys()):
+                threadnum = jobs[future]
+                result = 0
+                try:
+                    result = future.result()
+                except Exception as E:
+                    print('Thread {} terminated abnormally: {}'
+                          .format(threadnum,E))
 
-            with open('thread{}.status'.format(threadnum), 'w') as ts:
-                if result == DONE:
-                    ts.write('I completed successfully!\n')
-                else:
-                    ts.write('I completed unsuccessfully!\n')
+                with open('thread{}.status'.format(threadnum), 'w') as ts:
+                    if result == DONE:
+                        ts.write('I completed successfully!\n')
+                    else:
+                        ts.write('I completed unsuccessfully!\n')
+    #Simpler forking for whole BAM file processing.
+    else:
+        #Mini function: execute the command, surround in try except.
+        def procfun(dtuple):
+            tid, cmd = dtuple
+            try:
+                cmdlist = cmd.split()
+                val = subprocess.check_output(cmdlist)
+                print('tid: {}, the cmd is: {}'.format(tid, cmd))
+            except subprocess.CalledProcessError as cpe:
+                sys.stderr.write(('Oops: Problem in forked '
+                                 'process number {}: {}').format(tid, cpe))
+                return 'Thread {} executed unsuccessfully'.format(tid)
+            return 'Thread {} executed successfully'.format(tid)
+
+        #Mini function #2: Generator function for infinite numeric sequence.
+        def infinigen():
+            i = 0
+            while True:
+                yield i
+                i += 1
+
+        synchrom = Synchrom(args)
+        infinity = infinigen()
+        pool = multiprocessing.Pool(processes=numthreads)
+        pids = 0
+        with ThreadPoolExecutor(max_workers=numthreads) as threader:
+            results = threader.map(procfun, izip(infinity, synchrom.commands))
+            for i in results:
+                print i
