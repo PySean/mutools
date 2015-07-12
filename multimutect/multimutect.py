@@ -203,8 +203,16 @@ if __name__ == '__main__':
                 val = subprocess.check_output(cmdlist)
                 print('tid: {}, the cmd is: {}'.format(tid, cmd))
             except subprocess.CalledProcessError as cpe:
-                sys.stderr.write(('Oops: Problem in forked '
-                                 'process number {}: {}').format(tid, cpe))
+                #Log error to a file rather than write to stderr.
+                with open('thread{}.err'.format(tid)) as errfile:
+                    errfile.write(('I crashed with the command line:{}'
+                                   ' {}.{} You may need to use the default '
+                                   ' option for individual'
+                                   ' chromosome processing option instead, '
+                                   ' or a manual command line '
+                                   ' accomodating more '
+                                   ' memory for the Java heap.'
+                                   ).format(os.linesep, cmd, os.linesep))
                 return 'Thread {} executed unsuccessfully'.format(tid)
             return 'Thread {} executed successfully'.format(tid)
 

@@ -18,13 +18,13 @@ parser = makeparser('Combines all vcfs in a directory with CombineVariants')
 parser.add_argument('-o', '--outfile', type=str,
                     help='The resulting combined output file',
                     default='outfile.vcf')
-parser.add_argument('-D', '--delete', action='store_true',
+parser.add_argument('-D', '--delete_input_vcfs', action='store_true',
                     help=('If this is supplied, delete all vcfs in the'
                     ' directory'))
                     
 parser.add_argument('-l', '--listing', type=str,
                     help=('If this is supplied, combine VCF files in the order'
-                    'given in the listing file.'))
+                    ' given in the listing file.'))
 parser.add_argument('-w', '--without_nonecol', action='store_true',
                     help=('If this option is specified, the column containing'
                           ' "none" will be omitted.'))
@@ -44,7 +44,7 @@ def vformat(filename):
 Combines all vcfs in a directory with CombineVariants.
 """
 def vcf_combine(directory, reference, outfile, gatkpath, 
-                delete, listing, without_nonecol):
+                delete_input_vcfs, listing, without_nonecol):
     cmd = ('java -jar {gatk} -T CombineVariants -R {ref}' 
            ' -nt 4 {{vcfs}} -o {outfile}'
            ' -dcov 1000000 --genotypemergeoption UNSORTED')
@@ -77,7 +77,7 @@ def vcf_combine(directory, reference, outfile, gatkpath,
         sys.stderr.write('CombineVariants ran into a problem: {}\n'
                          .format(cpe))
         sys.exit(1)
-    if delete == True:
+    if delete_input_vcfs:
         map(lambda x: os.unlink(x), path_vcfs)
     if without_nonecol is True:
         rm_nonecol(outfile, 'newfile.vcf')
