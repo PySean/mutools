@@ -14,7 +14,7 @@ class Synchrom():
     Standard command template utilized when processing a chromosome at a time
     (using threads).
     """
-    cmd_template = ('java -Xmx2g -jar {mupath} --analysis_type MuTect'
+    cmd_template = ('java -Xmx3g -jar {mupath} --analysis_type MuTect'
     ' --showFullBamList --reference_sequence {fasta} {{normal}} {{tumor}}'
     ' --intervals %s -vcf {{filedir}}%s {mutectopts}')
 
@@ -22,7 +22,7 @@ class Synchrom():
     Nonstandard command template used when processing entire BAM files at 
     a time. As such, omits the --intervals option.
     """
-    ntcmd_template = ('java -Xmx2g -jar {mupath} --analysis_type MuTect'
+    ntcmd_template = ('java -Xmx3g -jar {mupath} --analysis_type MuTect'
     ' --showFullBamList --reference_sequence {fasta} {{normal}} {{tumor}}'
     ' -vcf {{filepath}} {mutectopts}')
 
