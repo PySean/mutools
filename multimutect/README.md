@@ -12,8 +12,11 @@ tumor1.bam:normal1.bam tumor2.bam:normal2.bam ... tumorN.bam:normalN.bam
 Or in a text file where the tumor/normal pairs are separated by whitespace instead:
 
 tumor1.bam  normal1.bam 
+
 tumor2.bam  normal2.bam
+
 ...
+
 tumorN.bam  normalN.bam
 
 Of course, the names do not have to be tumorX.bam and normalX.bam.
@@ -94,10 +97,12 @@ Example Usage
 
 Here, two pairs are specified for processing, one without a normal sample. 
 Here the option -dt NONE is given to MuTect to tell it not to use downsampling.
+--mem is also increased from 2 to 3 in anticipation of more heap usage due to
+the lack of downsampling.
 
 ```
 ./multimutect.py -m /opt/bin/mutect-1.1.7.jar -p tumor.bam:normal.bam tumor2.bam:
--M "-dt NONE" -f hg19.fa -i myBAMs -o BAMresults --process_whole_bam
+-M "-dt NONE" -f hg19.fa -i myBAMs -o BAMresults --process_whole_bam --mem 3
 ```
 
 ###Memory Usage Notes
