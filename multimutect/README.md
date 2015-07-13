@@ -59,7 +59,19 @@ Summary
 
   `--mutectopts`: Extra parameters specific to MuTect. Must be surrounded
                   by single or double quotes.
-
+- `-c`
+   
+  `--conf`: A file with MuTect-specific parameters inside. Each token can be
+            separated by whitespace of your choice, so something like this:
+            
+           ```
+           -dcov 1000
+           -dfrac
+           123
+           -im ALL -ip 50
+           ```
+           is legal. **NOTE**: This option is mutually exclusive with regards
+           to -M. Only one source of MuTect specific options is necessary.
 - `-f`
 
   `--fasta`: *Required*. FASTA formatted reference sequence. 

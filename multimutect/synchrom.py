@@ -59,17 +59,29 @@ class Synchrom():
 
     def __init__(self, cmd_args):
         fasta = cmd_args.fasta
-        mutectopts = cmd_args.mutectopts
+        mu_opts = ''
+        if cmd_args.conf != '':
+            if os.path.exists(cmd_args.conf):
+                with open(cmd_args.conf, 'r') as cmd_conf:
+                    mu_opts = ''.join([re.sub(os.linesep, ' ', cmd)
+                                      for cmd in cmd_conf])
+            else:
+                sys.stderr.write('Problem: {} does not exist.{}'
+                                 .format(cmd_args.conf, os.linesep))
+                sys.exit(1)
+        else:
+            mu_opts = cmd_args.mutectopts
+            
         mupath = cmd_args.mupath
         mem = cmd_args.mem
         #Insert the stuff that won't change into the cmd template.
         self.cmd_template = self.cmd_template.format(mem=mem,
                                                      fasta=fasta, 
-                                                     mutectopts=mutectopts,
+                                                     mutectopts=mu_opts,
                                                      mupath=mupath)
         self.ntcmd_template = self.ntcmd_template.format(mem=mem,
                                                          fasta=fasta, 
-                                                         mutectopts=mutectopts,
+                                                         mutectopts=mu_opts,
                                                          mupath=mupath)
         self.outputdir = cmd_args.outputdir
         self.inputdir = cmd_args.inputdir

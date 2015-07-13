@@ -135,21 +135,33 @@ if __name__ == '__main__':
                               ' by default'))
     #Create a group for both the file of bamfiles and cmd line
     #list of bamfiles.
-    group = parser.add_mutually_exclusive_group(required=True)
+    file_group = parser.add_mutually_exclusive_group(required=True)
 
-    group.add_argument('-b', '--bamlistfile', type=str, 
+    file_group.add_argument('-b', '--bamlistfile', type=str, 
                         help='File containing tumor:normal pairs for MuTect')
-    group.add_argument('-p', '--pairs', type=str, nargs='*',
+
+    file_group.add_argument('-p', '--pairs', type=str, nargs='*',
                         help=('List of arguments specifying tumor:normal'
                             ' filename pairs.'))
-    parser.add_argument('-M', '--mutectopts', type=str, default='',
+
+    #Group for either conf file for MuTect specific args or
+    #command line for them.
+    cmd_group = parser.add_mutually_exclusive_group(required=False)
+    cmd_group.add_argument('-M', '--mutectopts', type=str, default='',
                         help='Extra parameters specific to MuTect')
+
+    cmd_group.add_argument('-c', '--conf', type=str, default='',
+                            help=('File containing extra parameters'
+                                  'specific to MuTect'))
+
     parser.add_argument('-f', '--fasta', type=str,
                         help='FASTA formatted reference sequence',
                         required=True)
+
     parser.add_argument('-i', '--inputdir', type=str, default=os.getcwd(),
                         help=('The name of the directory the input files'
                               ' are located. Default: working directory.'))
+
     parser.add_argument('-o', '--outputdir', type=str, default='output',
                         help=('The name of the directory the output should go'
                               ' to. Default: a directory called "output"'))
