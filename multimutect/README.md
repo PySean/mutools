@@ -31,39 +31,48 @@ Summary
 ```
 
 -  `-h`
+
    `--help`: Displays basic usage information.
  
 - `-m`
+
   `--mupath`: Specifies the full pathname of the MuTect jar file.
               *Default*: a file called "mutect.jar" in the current 
               working directory.
 
 - `-b`
+
   `--bamlistfile`: *Required*. Specifies a file listing the BAM files 
                    multimutect will run MuTect on. The format of the 
                    file is described above.
 
 - `-p`
+
   `--pairs`: *Required*. A colon separated list of tumor:normal pairs as 
              described above. **NOTE**: Only this option or -b 
              must be specified for the list of tumor:normal pairs.
 
 - `-M`
+
   `--mutectopts`: Extra parameters specific to MuTect. Must be surrounded
                   by single or double quotes.
 
 - `-f`
+
   `--fasta`: *Required*. FASTA formatted reference sequence. 
 
 - `-i`
+
   `--inputdir`: The name of the directory the input BAM files are located.
                 *Default*: The current working directory.
 
 - `-o`
+
   `--outputdir`: The name of the directory multimutect will create & 
                  output VCF files to.
                  *Default*: A directory called "output" is created.
 - `-w`
+
   `--process_whole_bam`: Each thread will process an entire BAM file at once
                          instead of multiple chromosomes at a time. This is
                          a good idea for smaller BAM files.
