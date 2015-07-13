@@ -153,7 +153,19 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--outputdir', type=str, default='output',
                         help=('The name of the directory the output should go'
                               ' to. Default: a directory called "output"'))
-    parser.add_argument('-w', '--whole', action='store_true',
+
+    parser.add_argument('--numthreads', type=int, 
+                        default=multiprocessing.cpu_count() // 4,
+                        help=('The number of threads that will fork mutect'
+                              ' processes. Default: The # of cores on your'
+                              ' computer / 4, rounded down.'))
+
+    parser.add_argument('--mem', type=int, default=2,
+                        help=('The max amount of memory each forked MuTect'
+                              ' process can allocate on the Java heap'
+                              ' Default: 2'))
+
+    parser.add_argument('--process_whole_bam', action='store_true',
                         help=('Process the entire BAM file at once instead '
                               'of single chromosomes at a time'))
     args = parser.parse_args()
@@ -163,9 +175,9 @@ if __name__ == '__main__':
         sys.exit(1)
     #diagnostic(Synchrom(args))
     #Create the threads and the parent output directory.
-    numthreads = multiprocessing.cpu_count() // 4
+    numthreads = args.numthreads
     os.mkdir(args.outputdir)
-    if args.whole != True:
+    if args.process_whole_bam != True:
         #Get the the threads going. Output debug info to thread-specific files.
         with ThreadPoolExecutor(max_workers=numthreads) as threader:
             synchrom = Synchrom(args)

@@ -3,6 +3,7 @@
 "combine.py", by Sean Soderman
 Combines all vcfs *in* a directory using the GATK tool CombineVariants.
 """
+#TODO: Add option for removing all REJECT lines as well.
 import os
 import re
 import sys
@@ -47,7 +48,7 @@ def vcf_combine(directory, reference, outfile, gatkpath,
                 delete_input_vcfs, listing, without_nonecol):
     cmd = ('java -jar {gatk} -T CombineVariants -R {ref}' 
            ' -nt 4 {{vcfs}} -o {outfile}'
-           ' -dcov 1000000 --genotypemergeoption UNSORTED')
+           ' -dt NONE --genotypemergeoption UNSORTED')
     cmd = cmd.format(gatk=gatkpath, ref=reference, outfile=outfile)
     
     vcfs = []

@@ -14,7 +14,7 @@ class Synchrom():
     Standard command template utilized when processing a chromosome at a time
     (using threads).
     """
-    cmd_template = ('java -Xmx3g -jar {mupath} --analysis_type MuTect'
+    cmd_template = ('java -Xmx{mem}g -jar {mupath} --analysis_type MuTect'
     ' --showFullBamList --reference_sequence {fasta} {{normal}} {{tumor}}'
     ' --intervals %s -vcf {{filedir}}%s {mutectopts}')
 
@@ -22,7 +22,7 @@ class Synchrom():
     Nonstandard command template used when processing entire BAM files at 
     a time. As such, omits the --intervals option.
     """
-    ntcmd_template = ('java -Xmx3g -jar {mupath} --analysis_type MuTect'
+    ntcmd_template = ('java -Xmx{mem}g -jar {mupath} --analysis_type MuTect'
     ' --showFullBamList --reference_sequence {fasta} {{normal}} {{tumor}}'
     ' -vcf {{filepath}} {mutectopts}')
 
@@ -61,13 +61,16 @@ class Synchrom():
         fasta = cmd_args.fasta
         mutectopts = cmd_args.mutectopts
         mupath = cmd_args.mupath
+        mem = cmd_args.mem
         #Insert the stuff that won't change into the cmd template.
-        self.cmd_template = self.cmd_template.format(fasta=fasta, 
-                                                    mutectopts=mutectopts,
-                                                    mupath=mupath)
-        self.ntcmd_template = self.ntcmd_template.format(fasta=fasta, 
-                                                    mutectopts=mutectopts,
-                                                    mupath=mupath)
+        self.cmd_template = self.cmd_template.format(mem=mem,
+                                                     fasta=fasta, 
+                                                     mutectopts=mutectopts,
+                                                     mupath=mupath)
+        self.ntcmd_template = self.ntcmd_template.format(mem=mem,
+                                                         fasta=fasta, 
+                                                         mutectopts=mutectopts,
+                                                         mupath=mupath)
         self.outputdir = cmd_args.outputdir
         self.inputdir = cmd_args.inputdir
 
@@ -87,9 +90,11 @@ class Synchrom():
     def get_command(self, sample_pairs, whole, infile=False):
         err_str = 'Error: argument|line {} has no tumor filename.\n'
         line_number = 0
+        pairsep = ':'
         if infile == True:
             try:
                 sample_pairs = open(sample_pairs, 'r')
+                pairsep = '\s+'
             except FileNotFoundError:
                 sys.stderr.write(('get_command' 
                                   ' could not open file {}\n'
@@ -99,7 +104,7 @@ class Synchrom():
             #Skip header line
             if not re.search('.*bam', pair):
                 continue
-            tumor, normal = re.split('\s+', pair)
+            tumor, normal = re.split(pairsep, pair)
             normal = normal.strip()
             if tumor == '':
                 sys.stderr.write(err_str.format(line_number))
