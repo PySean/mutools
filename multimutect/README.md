@@ -27,21 +27,13 @@ works fine with tumor only data.
 Summary
 -------
 ```
-./multimutect.py [--help] [-m path_to_mutect]
-                 -b list_of_bams | -p tumor1.bam:[normal1.bam] tumor2.bam...
-                 [-M mutect_options] -f fasta_file [-i input_directory]
-                 [-o output_directory] [--process_whole_bam]
+./multimutect.py -b list_of_bams | -p tumor1.bam:[normal1.bam] tumor2.bam...
+                 -f fasta_file 
+                 [--help] [-m path_to_mutect]
+                 [-M mutect_options | -c conf_file]
+                 [-i input_directory] [-o output_directory]
+                 [--numthreads num] [--mem num] [--process_whole_bam]
 ```
-
--  `-h`
-
-   `--help`: Displays basic usage information.
- 
-- `-m`
-
-  `--mupath`: Specifies the full pathname of the MuTect jar file.
-              *Default*: a file called "mutect.jar" in the current 
-              working directory.
 
 - `-b`
 
@@ -54,6 +46,19 @@ Summary
   `--pairs`: *Required*. A colon separated list of tumor:normal pairs as 
              described above. **NOTE**: Only this option or -b 
              must be specified for the list of tumor:normal pairs.
+- `-f`
+
+  `--fasta`: *Required*. FASTA formatted reference sequence. 
+
+-  `-h`
+
+   `--help`: Displays basic usage information.
+ 
+- `-m`
+
+  `--mupath`: Specifies the full pathname of the MuTect jar file.
+              *Default*: a file called "mutect.jar" in the current 
+              working directory.
 
 - `-M`
 
@@ -70,11 +75,10 @@ Summary
            123
            -im ALL -ip 50
            ```
+
            is legal. **NOTE**: This option is mutually exclusive with regards
            to -M. Only one source of MuTect specific options is necessary.
-- `-f`
 
-  `--fasta`: *Required*. FASTA formatted reference sequence. 
 
 - `-i`
 
@@ -86,11 +90,11 @@ Summary
   `--outputdir`: The name of the directory multimutect will create & 
                  output VCF files to.
                  *Default*: A directory called "output" is created.
-- `-w`
 
-  `--process_whole_bam`: Each thread will process an entire BAM file at once
-                         instead of multiple chromosomes at a time. This is
-                         a good idea for smaller BAM files.
+
+-  `--numthreads`: The number of threads multimutect will create.
+                   *Default*: Number of cores on your machine / 4.
+                   **Use this option at your own risk!**.
 
 -  `--mem`: The maximum amount of heap memory the Java interpreter should
             use. It is a good idea to increase this when the no downsampling
@@ -99,10 +103,9 @@ Summary
             to allocate on the heap. 
             *Default*: 2.
 
--  `--numthreads`: The number of threads multimutect will create.
-                   *Default*: Number of cores on your machine / 4.
-                   **Use this option at your own risk!**.
-
+- `--process_whole_bam`: Each thread will process an entire BAM file at once
+                         instead of multiple chromosomes at a time. This is
+                         a good idea for smaller BAM files.
 
 Example Usage
 -------

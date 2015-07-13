@@ -128,11 +128,6 @@ def diagnostic(synchrom):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='MuTect parallelizer')
-    parser.add_argument('-m', '--mupath', type=str, default='mutect.jar',
-                        help=('The path to the MuTect jar file.'
-                              ' Looks for a file named mutect.jar'
-                              ' in the current working directory'
-                              ' by default'))
     #Create a group for both the file of bamfiles and cmd line
     #list of bamfiles.
     file_group = parser.add_mutually_exclusive_group(required=True)
@@ -144,19 +139,26 @@ if __name__ == '__main__':
                         help=('List of arguments specifying tumor:normal'
                             ' filename pairs.'))
 
+    parser.add_argument('-f', '--fasta', type=str,
+                        help='FASTA formatted reference sequence',
+                        required=True)
+
     #Group for either conf file for MuTect specific args or
     #command line for them.
     cmd_group = parser.add_mutually_exclusive_group(required=False)
+
+    parser.add_argument('-m', '--mupath', type=str, default='mutect.jar',
+                        help=('The path to the MuTect jar file.'
+                              ' Looks for a file named mutect.jar'
+                              ' in the current working directory'
+                              ' by default'))
+
     cmd_group.add_argument('-M', '--mutectopts', type=str, default='',
                         help='Extra parameters specific to MuTect')
 
     cmd_group.add_argument('-c', '--conf', type=str, default='',
                             help=('File containing extra parameters'
-                                  'specific to MuTect'))
-
-    parser.add_argument('-f', '--fasta', type=str,
-                        help='FASTA formatted reference sequence',
-                        required=True)
+                                  ' specific to MuTect'))
 
     parser.add_argument('-i', '--inputdir', type=str, default=os.getcwd(),
                         help=('The name of the directory the input files'
