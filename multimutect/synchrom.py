@@ -7,6 +7,7 @@
 import os
 import re
 import sys
+from pysam import AlignmentFile
 
 
 class Synchrom():
@@ -88,11 +89,52 @@ class Synchrom():
 
         if cmd_args.bamlistfile is not None:
             self.commands = self.get_command(cmd_args.bamlistfile, 
-                                             cmd_args.whole,
+                                             cmd_args.process_whole_bam,
                                              infile=True)
         else:
-            self.commands = self.get_command(cmd_args.pair, cmd_args.whole)
+            self.commands = self.get_command(cmd_args.pairs, 
+                                            cmd_args.process_whole_bam)
+        #Create generator for default case if processing files chromosomes
+        #at a time. TODO FIXME NOTE
+        if not cmd_args.process_whole_bam:
+            copy = self.commands
+            tumorbam = ''
+            line = ''
+            #Get the path to the tumor BAM file so protogen can create
+            #a list of chromosomes.
+            if cmd_args.bamlistfile is not None:
+                with open(cmd_args.bamlistfile) as listfile:
+                    line = listfile.readline().strip()
+                    #Skip any header lines
+                    while not re.search('.*bam', line):
+                        line = listfile.readline().strip()
+                    tumorbam = line.split('\s+')[0]
+            else:
+                tumorbam = cmd_args.pairs[0].split(':')[0]
 
+            tumorbam = os.path.join(self.inputdir, tumorbam)
+            self.commands = self.protogen(tumorbam, copy)
+
+    """
+    Generator for default case. Creates n commands for each file, where
+    n = the number of chromosomes * the number of files.
+    Currently, composes the generator from get_command. May not
+    need to do this, but right now it feels natural..
+    """
+    def protogen(self, tumorbam, cmdgen):
+        chrlist = None
+        with AlignmentFile(tumorbam, 'rb') as bamfile:
+            chrlist = bamfile.references
+        cont = True
+        cmd = ''
+        while cont:
+            try:
+                cmd = cmdgen.next()
+            except StopIteration:
+                cont = False
+                continue
+            for i in range(0, len(chrlist)):
+                yield cmd % (chrlist[i], chrlist[i] + '.vcf')
     """
     Parses a file or cmd line list into tumor:normal pairs. 
     Returns a single command. Must be surrounded in a StopIteration
@@ -139,6 +181,9 @@ class Synchrom():
 
     Adds the output directory to the output_dirs list, input directory to
     the bam_inputs list, and the command line to the cmd_strings list.
+
+    Side effects: Creates an output directory for each BAM file pair.
+    Also creates a file 'chrs.list' in the output directory.
     """
     def build_command(self, sample_pair):
         tumor, normal = sample_pair
@@ -154,15 +199,24 @@ class Synchrom():
             normal = '--input_file:normal ' + normal
         else:
             filedir = os.path.join(self.outputdir, tumdir, '')
-        self.output_dirs.append(filedir)
+        os.makedirs(filedir.strip('/'))
+        #DEPRECATED NOTE (No allocation necessary anymore...)
+        #self.output_dirs.append(filedir)
         #No possibility for tumor to equal '' as the calling function
         #handles this case and returns None as a result.
         tumor = os.path.join(self.inputdir, tumor)
-        self.bam_inputs.append(tumor)
+        #Write the chromosome list to the output directory.
+        with AlignmentFile(tumor, 'rb') as tumbam:
+            with open(os.path.join(filedir, 'chrs.list'), 'w') as chrlist:
+                map(chrlist.write, os.linesep.join(tumbam.references))
+            
+        #DEPRECATED NOTE
+        #self.bam_inputs.append(tumor)
         tumor = '--input_file:tumor ' + tumor
         cmd = self.cmd_template.format(normal=normal, tumor=tumor, 
                                        filedir=filedir)
-        self.cmd_strings.append(cmd)
+        #DEPRECATED NOTE
+        #self.cmd_strings.append(cmd)
         return cmd
 
     """

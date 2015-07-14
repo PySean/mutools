@@ -36,14 +36,17 @@ def vcf_catenate(parent, reference, gatkpath='gatk.jar'):
            ' -assumeSorted -R' 
            ' {ref} -out {{out}} {{vcfs}}').format(gatk=gatkpath, 
                                                 ref=reference)
-    statdir = os.path.join(parent, 'statuses')
-    if not os.path.exists(statdir):
-        os.mkdir(statdir)
+    #DEPRECATED: Logging for per-chromosome status.
+    #Completely outclassed by easier, more visible logging in the current
+    #directory.
+    #statdir = os.path.join(parent, 'statuses')
+    #if not os.path.exists(statdir):
+    #    os.mkdir(statdir)
     for dirpath, dirnames, filenames in os.walk(parent):
         for directory in dirnames:
             d_path = os.path.join(dirpath, directory)
             listing = os.path.join(d_path, 'chrs.list')
-            statfile = os.path.join(d_path, 'status.list')
+            #statfile = os.path.join(d_path, 'status.list')
             #NOTE: An underscore is no longer at the end of the 
             #directories. However I am going to leave this here just in
             #case.
@@ -69,9 +72,7 @@ def vcf_catenate(parent, reference, gatkpath='gatk.jar'):
                     #No index file is created for empty vcfs.
                     map(lambda x: os.unlink(x + '.idx'), realchrs)
                     os.unlink(listing)
-            if os.path.exists(statfile):
-                os.rename(statfile, os.path.join(statdir, status_name))
-                os.rmdir(d_path)
+            os.rmdir(d_path)
 
 if os.path.exists(args.gatkpath):
     vcf_catenate(args.directory, args.reference, args.gatkpath)

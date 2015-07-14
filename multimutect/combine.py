@@ -34,7 +34,7 @@ args = parser.parse_args()
 
 """
 Contains a little too much to be contained in a lambda expression.
-Returns an argument string with the hyphens separated by underscores.
+Returns an argument string with the hyphens replaced by underscores.
 """
 def vformat(filename): 
     base_filename = os.path.basename(filename).split('.')[0]
