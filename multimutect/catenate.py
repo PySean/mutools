@@ -24,6 +24,7 @@ lead to files of size zero, or that do not exist.
 def chr_validate(chrlist):
     fil_func = lambda x: os.stat(x).st_size != 0 and os.path.exists(x)
     return filter(fil_func, chrlist)
+
 """
 Concatenates all vcfs under a directory. 
 By default, does not remove the vcf files.
@@ -36,17 +37,10 @@ def vcf_catenate(parent, reference, gatkpath='gatk.jar'):
            ' -assumeSorted -R' 
            ' {ref} -out {{out}} {{vcfs}}').format(gatk=gatkpath, 
                                                 ref=reference)
-    #DEPRECATED: Logging for per-chromosome status.
-    #Completely outclassed by easier, more visible logging in the current
-    #directory.
-    #statdir = os.path.join(parent, 'statuses')
-    #if not os.path.exists(statdir):
-    #    os.mkdir(statdir)
     for dirpath, dirnames, filenames in os.walk(parent):
         for directory in dirnames:
             d_path = os.path.join(dirpath, directory)
             listing = os.path.join(d_path, 'chrs.list')
-            #statfile = os.path.join(d_path, 'status.list')
             #NOTE: An underscore is no longer at the end of the 
             #directories. However I am going to leave this here just in
             #case.

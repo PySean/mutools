@@ -28,24 +28,6 @@ class Synchrom():
     ' -vcf {{filepath}} {mutectopts}')
 
     """
-    List containing a command line template for each thread.#
-    The command leaves out the '--intervals <chr>' portion as a %s
-    so that the threads can work out which chromosome to process themselves.
-    """
-    cmd_strings = list()
-
-    """
-    List containing the output directories of each sample.
-    Required due to logging and chromosome index output
-    mechanisms (their output goes in here).
-
-    The input list is required by add_chrom_and_array, as each pair
-    will have a (possibly) different chromosome listing.
-    """
-    bam_inputs = list()
-    output_dirs = list()
-
-    """
     The name of the directory that will contain the output directories.
     Also, the name of the directory containing the input files.
     """
@@ -94,10 +76,10 @@ class Synchrom():
         else:
             self.commands = self.get_command(cmd_args.pairs, 
                                             cmd_args.process_whole_bam)
-        #Create generator for default case if processing files chromosomes
-        #at a time. TODO FIXME NOTE
+        #Create generator for default case if processing files 
+        #by chromosome segments at a time.
         if not cmd_args.process_whole_bam:
-            copy = self.commands
+            cmd_copy = self.commands
             tumorbam = ''
             line = ''
             #Get the path to the tumor BAM file so protogen can create
@@ -113,7 +95,7 @@ class Synchrom():
                 tumorbam = cmd_args.pairs[0].split(':')[0]
 
             tumorbam = os.path.join(self.inputdir, tumorbam)
-            self.commands = self.protogen(tumorbam, copy)
+            self.commands = self.protogen(tumorbam, cmd_copy)
 
     """
     Generator for default case. Creates n commands for each file, where
@@ -135,6 +117,7 @@ class Synchrom():
                 continue
             for i in range(0, len(chrlist)):
                 yield cmd % (chrlist[i], chrlist[i] + '.vcf')
+
     """
     Parses a file or cmd line list into tumor:normal pairs. 
     Returns a single command. Must be surrounded in a StopIteration
@@ -171,6 +154,7 @@ class Synchrom():
         #Once all samples have been processed, close the listing file.
         if infile == True:
             sample_pairs.close()
+
     """
     Retrieves a single command corresponding to the tumor:normal
     pair fetched from the file or command line with get_pair.
@@ -178,9 +162,6 @@ class Synchrom():
     fasta, mutectopts, and the path to MuTect are never changed
     and needed only in the construction of the command, so I have made 
     them a part of the original command.
-
-    Adds the output directory to the output_dirs list, input directory to
-    the bam_inputs list, and the command line to the cmd_strings list.
 
     Side effects: Creates an output directory for each BAM file pair.
     Also creates a file 'chrs.list' in the output directory.
@@ -200,8 +181,6 @@ class Synchrom():
         else:
             filedir = os.path.join(self.outputdir, tumdir, '')
         os.makedirs(filedir.strip('/'))
-        #DEPRECATED NOTE (No allocation necessary anymore...)
-        #self.output_dirs.append(filedir)
         #No possibility for tumor to equal '' as the calling function
         #handles this case and returns None as a result.
         tumor = os.path.join(self.inputdir, tumor)
@@ -210,18 +189,14 @@ class Synchrom():
             with open(os.path.join(filedir, 'chrs.list'), 'w') as chrlist:
                 map(chrlist.write, os.linesep.join(tumbam.references))
             
-        #DEPRECATED NOTE
-        #self.bam_inputs.append(tumor)
         tumor = '--input_file:tumor ' + tumor
         cmd = self.cmd_template.format(normal=normal, tumor=tumor, 
                                        filedir=filedir)
-        #DEPRECATED NOTE
-        #self.cmd_strings.append(cmd)
         return cmd
 
     """
-    Builds a command not intended for multithreaded use.
-    Omits the allocation steps build_command utilizes.
+    Builds a command intended for the processing of an entire
+    BAM file.
     """
     def build_ntcommand(self, sample_pair):
         tumor, normal = sample_pair

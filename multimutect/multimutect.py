@@ -23,11 +23,7 @@ Takes a Synchrom object and returns None.
 """
 def diagnostic(synchrom):
     for item in synchrom.commands:
-        dirname = synchrom.output_dirs[-1]
-        print(('My command is {}\n'
-               ' The directory I am writing to is {}\n'
-               #' The filenames will be named after chromosomes: {}\n'
-              ).format(item, dirname))
+        print('My command is {}'.format(item))
 
 
 if __name__ == '__main__':
