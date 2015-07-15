@@ -13,9 +13,6 @@ the specified directory.
               [-h] [--info rgid rglb rgpl rgpu rgsm]
               [-p path_to_picard]
 ```
-- ``
-  
-  ``:
 
 - `-d`
 
