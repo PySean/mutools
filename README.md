@@ -4,10 +4,10 @@
 A suite of tools for working with MuTect.
 
 ##Dependencies
-* [pysam](https://pypi.python.org/pypi/pysam) (for multimutect)
+* [pysam](https://pypi.python.org/pypi/pysam)
 * [argparse](https://pypi.python.org/pypi/argparse/1.3.0)
    \*if your python version is < 2.7
-* [futures](https://pypi.python.org/pypi/futures/3.0.3) (for multimutect)
+* [futures](https://pypi.python.org/pypi/futures/3.0.3)
 * *multimutect requires that python 2 be used, as pysam is written in it.*
 
 ##Required Files
