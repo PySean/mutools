@@ -71,4 +71,7 @@ the ordering of chromosomes in the supplied FASTA file.
 
 ####reindex and mapqto0
 These two scripts are rather short. Both take the directory of
-bam files as their only positional arguments (invoked as ./reindex.py wham.bam)
+bam files as their only positional arguments, so they can be invoked simply
+as ./reindex.py [directory] or ./mapqto0.py [directory]. reindex will leave
+a BAM index file for every BAM file in the directory, whereas mapqto0
+will leave nothing extra, as it is rewriting each file.
