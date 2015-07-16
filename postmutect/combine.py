@@ -56,7 +56,7 @@ def vcf_combine(directory, reference, outfile, gatkpath,
         with open(listing, 'r') as bamlist:
             bamonly = [x for x in bamlist if re.search('\.bam\s*$', x)]
             #Make respective tumors/normals lists.
-            tumors, normals = zip(*[re.split('\t', x) for x in bamonly])
+            tumors, normals = zip(*[x.split() for x in bamonly])
             #Substitute .bam in the tumor element for an underscore
             #and append the corresponding normal if y isn't blank, else
             #just use the tumor filename (.bam -> .vcf in either case)
@@ -101,7 +101,7 @@ def rm_nonecol(infile, noneless):
             if re.match('#CHROM', line) and not re.search('none', line):
                 sys.stderr.write(("I am sorry, but you don't"
                                   " even need to use this switch, as your file"
-                                  " has no 'none' column in it."))
+                                  " has no 'none' column in it.\n"))
                 #os.unlink(noneless)
                 sys.exit(1)
             elif re.search('#CHROM.*none', line):

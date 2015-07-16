@@ -90,7 +90,7 @@ class Synchrom():
                     #Skip any header lines
                     while not re.search('.*bam', line):
                         line = listfile.readline().strip()
-                    tumorbam = line.split('\s+')[0]
+                    tumorbam = line.split()[0]
             else:
                 tumorbam = cmd_args.pairs[0].split(':')[0]
 
