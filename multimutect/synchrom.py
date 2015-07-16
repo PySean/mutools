@@ -127,11 +127,9 @@ class Synchrom():
     def get_command(self, sample_pairs, whole, infile=False):
         err_str = 'Error: argument|line {} has no tumor filename.\n'
         line_number = 0
-        pairsep = ':'
         if infile == True:
             try:
                 sample_pairs = open(sample_pairs, 'r')
-                pairsep = '\s+'
             except FileNotFoundError:
                 sys.stderr.write(('get_command' 
                                   ' could not open file {}\n'
@@ -141,7 +139,7 @@ class Synchrom():
             #Skip header line
             if not re.search('.*bam', pair):
                 continue
-            tumor, normal = re.split(pairsep, pair)
+            tumor, normal = pair.split() if infile == True else pair.split(':')
             normal = normal.strip()
             if tumor == '':
                 sys.stderr.write(err_str.format(line_number))
