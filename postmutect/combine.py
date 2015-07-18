@@ -3,7 +3,6 @@
 "combine.py", by Sean Soderman
 Combines all vcfs *in* a directory using the GATK tool CombineVariants.
 """
-#TODO: Add option for removing all REJECT lines as well.
 import os
 import re
 import sys
@@ -102,7 +101,6 @@ def rm_nonecol(infile, noneless):
                 sys.stderr.write(("I am sorry, but you don't"
                                   " even need to use this switch, as your file"
                                   " has no 'none' column in it.\n"))
-                #os.unlink(noneless)
                 sys.exit(1)
             elif re.search('#CHROM.*none', line):
                 none_pos = map(lambda x: x.strip(), new_line).index('none')
