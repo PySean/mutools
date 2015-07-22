@@ -12,7 +12,7 @@ args <- commandArgs(trailingOnly=TRUE)
 
 if (length(args) < 3) {
    print(paste('Usage:', './grapher.R', '<vcf>', '<refseq>', '<fai>'))
-   stop(status=1)
+   #stop(status=1)
 }
 
 #Function that reads a file connection to a fai file
@@ -21,10 +21,9 @@ if (length(args) < 3) {
 #as the line length in bytes for this fasta file.
 fai_fields <- function(fai_file) {
    contigs <- list()
-   col_names <- c('contig', 'sz', 'pos', 'line_bp', 'line_bytes')
+   col_names <- c('contig', 'sz', 'pos', 'line_nts', 'line_bytes')
    fai_table <- read.table(fai_file, sep='\t', 
                            col.names=col_names)
-
    #Since it's read in as a factor, convert the contig col to char vectors.
    fai_table$contig <- as.character(fai_table$contig)
    accum <- 0
@@ -85,23 +84,39 @@ vcf_info <- function(vcf_line) {
 #and J is the chromosome behind the reference chromosome.
 get_context <- function(genome_pos, offset, line_bytes, line_nts, ref_file) {
    #Calculate offset to the chromosome behind the SNP.
-   chr_off <- floor(genome_pos / line_nts) + (genome_pos %% line_nts) +
-              offset - 2 #Get single context nucleotide before SNP/indel.
+   genome_rem <-  genome_pos %% line_nts
+   chr_off <- (floor((genome_pos - 1) / line_nts) * line_bytes) + 
+              #floor(genome_pos / line_bytes) +
+              ifelse(genome_rem, genome_rem, line_nts) +
+              offset - 1 #Get single context nucleotide before SNP/indel.
+
+   print(paste('chr offset: ', chr_off, 'genome pos: ', genome_pos))
    #Seek to the position. If there's a newline, step back twice and try again.
    #Make sure to skip newlines.
    seek(ref_file, where=chr_off, origin='start')
-   char <- rawToChar(readBin(ref_file, what=raw(), n=1))
-   if (char == '\n') 
-      seek(ref_file, where=-2, origin='current')
-   counter <- 0
+   #NOTE: The issue is that an nt triple is repeated twice due to
+   #newlines being ignored.
+   #char <- rawToChar(readBin(ref_file, what=raw(), n=1)) #DEBUG
+   #if (char == '\n') {
+   #   print(paste('This happens at position', genome_pos))
+      #seek(ref_file, where=-2, origin='current')
+   #   seek(ref_file, where=-1, origin='current')
+   #} else {
+   #   seek(ref_file, where=-1, origin='current')
+   #}
+   counter <- 1
    context_string <- character(3)
-   while (counter < 3) {
-      char <- rawToChar(readBin(ref_file, what=raw(), n=6))
+   while (counter <= 3) {
+      char <- rawToChar(readBin(ref_file, what=raw(), n=1))
       if (char != '\n') {
-         context_string[counter] <- ifelse(counter == 1, char, '_')
+         #DEBUG: first item in ifelse should be '_', just testing.
+         context_string[counter] <- ifelse(counter == 2, char, char)
          counter <- counter + 1
+      } else {
+         print(paste('Newline encountered at position', genome_pos))
       }
    }
+   print(context_string)
    return(context_string)
 }
 
@@ -128,6 +143,11 @@ gather_data <- function(fai_data, vcf_name, ref_name) {
          break #TODO: Return approp. data structure.
       info <- vcf_info(line)
       offset <- contigs[[info$chrom]]
+      print(paste('Pos:', info$pos, 
+                  'offset:', offset, 
+                  'line bytes:', line_bytes, 
+                  'line nts:', line_nts, 
+                  'ref. file:', ref_file))
       context <- get_context(info$pos, offset, line_bytes, line_nts,  ref_file)
       line <- readLines(vcf_file, n=1)
    }
