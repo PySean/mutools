@@ -145,7 +145,7 @@ class Synchrom():
             try:
                 sample_pairs = open(sample_pairs, 'r')
                 pairsep = '\s+'
-            except FileNotFoundError:
+            except IOError:
                 sys.stderr.write(('get_command' 
                                   ' could not open file {}\n'
                                  ).format(sample_pairs))
