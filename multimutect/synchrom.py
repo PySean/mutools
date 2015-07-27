@@ -7,8 +7,21 @@
 import os
 import re
 import sys
-from pysam import AlignmentFile
-
+#Same as in mapqto0.py: Check for any package problems concerning pysam.
+for i in range(0, len(sys.path)):
+    traversed = []
+    for dirpath, dirnames, filenames in os.walk(sys.path[i]):
+        for dir in dirnames:
+            if 'pysam' == dir and not dirpath.endswith('site-packages'):
+                if dirpath not in traversed:
+                    sys.path.append(sys.path.pop(i))
+                    traversed.append(dirpath)
+try:
+    from pysam import AlignmentFile
+except ImportError as I:
+    sys.stderr.write('Please install the required modules: {}'
+                     .format(I))
+    sys.exit(1)
 
 class Synchrom():
     """

@@ -4,8 +4,26 @@
 Sets the MAPQ value of all unmapped reads to zero for each bam file in the
 specified directory.
 """
-import pysam
 import sys
+#Some preamble code:
+#Check for packages that have pysam as a subdirectory and push them to
+#the end of sys.path to avoid any possibility of the wrong pysam version
+#being used.
+for i in range(0, len(sys.path)):
+    traversed = []
+    for dirpath, dirnames, filenames in os.walk(sys.path[i]):
+        for dir in dirnames:
+            if 'pysam' == dir and not dirpath.endswith('site-packages'):
+                if dirpath not in traversed:
+                    sys.path.append(sys.path.pop(i))
+                    traversed.append(dirpath)
+try:
+    from pysam import AlignmentFile
+except ImportError as I:
+    sys.stderr.write('Please install the necessary packages: {}'
+                     .format(I))
+    sys.exit(1)
+    
 
 if len(sys.argv) < 2:
     usestr = "Usage: {} <bamdir> \n"
@@ -23,9 +41,9 @@ def umappedq2zero(bamdir):
         sys.stderr.write('Sorry, but the specified directory does not exist.')
         sys.exit(1)
     for bam in [bam for bam in os.listdir(bamdir) if bam.endswith('.bam')]:
-        inbam = pysam.AlignmentFile(bam, 'rb')
+        inbam = AlignmentFile(bam, 'rb')
         #Template is specified to maintain the same header information.
-        outbam = pysam.AlignmentFile('temp.bam', 'wb', template = inbam)
+        outbam = AlignmentFile('temp.bam', 'wb', template = inbam)
         #Construct reads iterator using fetch.
         reads = inbam.fetch(until_eof = True)
         for read in reads:
