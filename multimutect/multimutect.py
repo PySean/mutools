@@ -97,7 +97,7 @@ if __name__ == '__main__':
             val = subprocess.check_output(cmdlist)
             print('tid: {}, the cmd is: {}'.format(tid, cmd))
         except subprocess.CalledProcessError as cpe:
-            if not os.exists('errors'):
+            if not os.path.exists('errors'):
                 try:
                     os.mkdir('errors')
                 except OSError as O:

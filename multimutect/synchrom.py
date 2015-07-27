@@ -138,6 +138,7 @@ class Synchrom():
     tumor sample in the pair.
     """
     def get_command(self, sample_pairs, whole, infile=False):
+        sys.stderr.write('**********I AM HERE I GOT HERE**********\n')
         err_str = 'Error: argument|line {} has no tumor filename.\n'
         line_number = 0
         pairsep = ':'
@@ -186,7 +187,6 @@ class Synchrom():
         #within the parent output directory
         tumdir, normdir = tumor.split('.')[0] , normal.split('.')[0]
         #Create the output directory name, with a '/' (or '\') at the end.
-        #Append it to the list so it can be used later for log/ndx output.
         if normal != '':
             filedir = os.path.join(self.outputdir, (tumdir + '_' + normdir), '')
             normal = os.path.join(self.inputdir, normal)
@@ -194,6 +194,7 @@ class Synchrom():
         else:
             filedir = os.path.join(self.outputdir, tumdir, '')
         os.makedirs(filedir.strip('/'))
+        sys.stderr.write("*************I MADE IT, HELLO!!!!***********\n")
         #No possibility for tumor to equal '' as the calling function
         #handles this case and returns None as a result.
         tumor = os.path.join(self.inputdir, tumor)
@@ -210,6 +211,9 @@ class Synchrom():
     """
     Builds a command intended for the processing of an entire
     BAM file.
+
+    Side effect: Creates the output directory specified for the vcf
+    outputs.
     """
     def build_ntcommand(self, sample_pair):
         tumor, normal = sample_pair
@@ -220,6 +224,8 @@ class Synchrom():
             + '.vcf'
         else:
             filename = tumor.split('.')[0] + '.vcf'
+        if not os.path.exists(self.outputdir):
+            os.mkdir(self.outputdir)
         #Create output pathname.
         outfile = os.path.join(self.outputdir, filename)
         #Now create the paths to the input tumor/normal files.
