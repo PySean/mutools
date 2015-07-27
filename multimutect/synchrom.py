@@ -184,7 +184,7 @@ class Synchrom():
         filedir = ""
         #The directory of vcf files is <tumorbasename>_<normalbasename>,
         #within the parent output directory
-        tumdir, normdir = tumor.split('.')[0] , normal.split('.')[0]
+        tumdir, normdir = tumor.split('.bam')[0], normal.split('.bam')[0]
         #Create the output directory name, with a '/' (or '\') at the end.
         if normal != '':
             filedir = os.path.join(self.outputdir, (tumdir + '_' + normdir), '')
@@ -216,12 +216,14 @@ class Synchrom():
     def build_ntcommand(self, sample_pair):
         tumor, normal = sample_pair
         filename = ''
-        #Construct output filename.
+        #Construct output filename. 
+        #Can't depend on there only being one dot in the filename, so now
+        #only splits on the .bam extension!
         if normal != '':
-            filename = tumor.split('.')[0] + '_' + normal.split('.')[0] \
-            + '.vcf'
+            filename = (tumor.split('.bam')[0] + '_' + 
+                       normal.split('.bam')[0]  + '.vcf')
         else:
-            filename = tumor.split('.')[0] + '.vcf'
+            filename = tumor.split('.bam')[0] + '.vcf'
         if not os.path.exists(self.outputdir):
             os.mkdir(self.outputdir)
         #Create output pathname.
