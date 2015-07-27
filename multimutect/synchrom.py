@@ -180,7 +180,7 @@ class Synchrom():
     Also creates a file 'chrs.list' in the output directory.
     """
     def build_command(self, sample_pair):
-        tumor, normal = sample_pair
+        tumor, normal = map(os.path.basename, sample_pair)
         filedir = ""
         #The directory of vcf files is <tumorbasename>_<normalbasename>,
         #within the parent output directory
