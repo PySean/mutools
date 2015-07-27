@@ -138,7 +138,6 @@ class Synchrom():
     tumor sample in the pair.
     """
     def get_command(self, sample_pairs, whole, infile=False):
-        sys.stderr.write('**********I AM HERE I GOT HERE**********\n')
         err_str = 'Error: argument|line {} has no tumor filename.\n'
         line_number = 0
         pairsep = ':'
@@ -194,7 +193,6 @@ class Synchrom():
         else:
             filedir = os.path.join(self.outputdir, tumdir, '')
         os.makedirs(filedir.strip('/'))
-        sys.stderr.write("*************I MADE IT, HELLO!!!!***********\n")
         #No possibility for tumor to equal '' as the calling function
         #handles this case and returns None as a result.
         tumor = os.path.join(self.inputdir, tumor)
@@ -227,7 +225,7 @@ class Synchrom():
         if not os.path.exists(self.outputdir):
             os.mkdir(self.outputdir)
         #Create output pathname.
-        outfile = os.path.join(self.outputdir, filename)
+        outfile = os.path.join(self.outputdir, os.path.basename(filename))
         #Now create the paths to the input tumor/normal files.
         tumor = os.path.join(self.inputdir, tumor)
         tumor = '--input_file:tumor ' + tumor
