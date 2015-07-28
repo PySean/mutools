@@ -12,7 +12,7 @@ args <- commandArgs(trailingOnly=TRUE)
 
 if (length(args) < 3) {
    print(paste('Usage:', './grapher.R', '<vcf>', '<refseq>', '<fai>'))
-   #stop(status=1)
+   stop(status=1)
 }
 
 #Function that reads a file connection to a fai file
@@ -26,19 +26,7 @@ fai_fields <- function(fai_file) {
                            col.names=col_names)
    #Since it's read in as a factor, convert the contig col to char vectors.
    fai_table$contig <- as.character(fai_table$contig)
-   accum <- 0
-   #Utilized for calculating the progressive file offset from the
-   #contig column. 2 is added to account for the newline and '>'.
-   getaccum <- function(x) {
-      if (is.character(x)) {
-         accum <<- accum + length(strsplit(x, split='')[[1]]) + 2
-         accum
-      }
-      else{
-         NA
-      }
-   }
-   contigs[fai_table$contig] <- sapply(fai_table$contig, getaccum)
+   contigs[fai_table$contig] <- fai_table$pos #sapply(fai_table$contig, getaccum)
    close(fai_file)
    return(list(contigs=contigs, 
                line_nts=fai_table$line_nts[1], 
@@ -77,46 +65,65 @@ vcf_info <- function(vcf_line) {
    return (fields)
 }
 
+#Creates the "bin" data structure necessary for graphing.
+#Returns: A list of data frames. 
+#The list is indexed by the "change" string,
+#matrices are indexed by the preceding nucleotide (row) and the succeeding
+#nucleotide (col)
+make_bins <- function() {
+   nucleotides <- c('A', 'C', 'G', 'T')
+   matlist <- list()
+   matlab <- data.frame(row.names=nucleotides)
+   #Initialize & create the matrix that will get copied copiously.
+   for (i in 1:length(nucleotides)) {
+      matlab[[nucleotides[i]]] <- rep(0, 4)
+   }
+   #Initialize & create the list.
+   for (i in nucleotides) {
+      for (j in nucleotides) {
+         if (i != j) {
+            #data.frame copies data frames passed to it.
+            #This is necessary so that all the SNP indices don't point
+            #to the same data frame.
+            matlist[[paste0(i, '>', j)]] <- data.frame(matlab)
+         }
+      }
+   }
+   return(matlist)
+}
+
 #Seeks through the FASTA file for desired nucleotide triple, consisting
 #of the leading nucleotide, the ref nt a SNP/indel was compared with,
 #and the trailing nucleotide.
-#Returns: A string that looks like I_J, where I is the chromosome in front
-#and J is the chromosome behind the reference chromosome.
+#Returns: A character vector of the SNP, with context.
 get_context <- function(genome_pos, offset, line_bytes, line_nts, ref_file) {
    #Calculate offset to the chromosome behind the SNP.
    genome_rem <-  genome_pos %% line_nts
    chr_off <- (floor((genome_pos - 1) / line_nts) * line_bytes) + 
-              #floor(genome_pos / line_bytes) +
               ifelse(genome_rem, genome_rem, line_nts) +
-              offset - 1 #Get single context nucleotide before SNP/indel.
+              offset - 2 #Get single context nucleotide before SNP.
 
-   print(paste('chr offset: ', chr_off, 'genome pos: ', genome_pos))
-   #Seek to the position. If there's a newline, step back twice and try again.
-   #Make sure to skip newlines.
+   #print(paste('chr offset: ', chr_off, 'genome pos: ', genome_pos))
    seek(ref_file, where=chr_off, origin='start')
-   #NOTE: The issue is that an nt triple is repeated twice due to
-   #newlines being ignored.
-   #char <- rawToChar(readBin(ref_file, what=raw(), n=1)) #DEBUG
-   #if (char == '\n') {
-   #   print(paste('This happens at position', genome_pos))
-      #seek(ref_file, where=-2, origin='current')
-   #   seek(ref_file, where=-1, origin='current')
-   #} else {
-   #   seek(ref_file, where=-1, origin='current')
-   #}
    counter <- 1
    context_string <- character(3)
+   #Check for initial newline and seek back twice if one is encountered.
+   char <- rawToChar(readBin(ref_file, what=raw(), n=1))
+   if (char == '\n') {
+      seek(ref_file, where=-2, origin='current')
+   } else {
+      seek(ref_file, where=-1, origin='current')
+   }
    while (counter <= 3) {
       char <- rawToChar(readBin(ref_file, what=raw(), n=1))
       if (char != '\n') {
-         #DEBUG: first item in ifelse should be '_', just testing.
-         context_string[counter] <- ifelse(counter == 2, char, char)
+         context_string[counter] <- char
          counter <- counter + 1
       } else {
-         print(paste('Newline encountered at position', genome_pos))
+         #print(paste('Newline encountered at position', genome_pos))
       }
    }
-   print(context_string)
+   #print(context_string)
    return(context_string)
 }
 
@@ -126,6 +133,7 @@ get_context <- function(genome_pos, offset, line_bytes, line_nts, ref_file) {
 #Returns: A data structure containing the counts and frequencies
 #of mutations. 
 gather_data <- function(fai_data, vcf_name, ref_name) {
+   snp_bins <- make_bins()
    contigs <- fai_data$contigs
    line_bytes <- fai_data$line_bytes
    line_nts <- fai_data$line_nts
@@ -140,15 +148,17 @@ gather_data <- function(fai_data, vcf_name, ref_name) {
    #Read in pertinent information.
    repeat {
       if (length(line) == 0)
-         break #TODO: Return approp. data structure.
+         return(snp_bins) #TODO: Return approp. data structure.
       info <- vcf_info(line)
       offset <- contigs[[info$chrom]]
-      print(paste('Pos:', info$pos, 
-                  'offset:', offset, 
-                  'line bytes:', line_bytes, 
-                  'line nts:', line_nts, 
-                  'ref. file:', ref_file))
+      #print(paste('Pos:', info$pos, 
+      #            'offset:', offset, 
+      #            'line bytes:', line_bytes, 
+      #            'line nts:', line_nts, 
+      #            'ref. file:', ref_file))
       context <- get_context(info$pos, offset, line_bytes, line_nts,  ref_file)
+      snp_bins[[paste0(info$ref, '>', info$alt)]][context[1], context[2]] <- 
+        snp_bins[[paste0(info$ref, '>', info$alt)]][context[1], context[2]] + 1
       line <- readLines(vcf_file, n=1)
    }
    close(vcf_file)
