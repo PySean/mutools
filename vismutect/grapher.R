@@ -123,7 +123,6 @@ get_context <- function(genome_pos, offset, line_bytes, line_nts, ref_file) {
          #print(paste('Newline encountered at position', genome_pos))
       }
    }
-   #print(context_string)
    return(context_string)
 }
 
@@ -157,8 +156,13 @@ gather_data <- function(fai_data, vcf_name, ref_name) {
       #            'line nts:', line_nts, 
       #            'ref. file:', ref_file))
       context <- get_context(info$pos, offset, line_bytes, line_nts,  ref_file)
-      snp_bins[[paste0(info$ref, '>', info$alt)]][context[1], context[2]] <- 
-        snp_bins[[paste0(info$ref, '>', info$alt)]][context[1], context[2]] + 1
+      #Some SNPS have multiple possibilities.. account for them.
+      alts <- strsplit(info$alt, split=',')[[1]]
+      for (i in alts) {
+         snp <- paste0(info$ref, '>', i)
+         snp_bins[[snp]][context[1], context[2]] <- 
+                 snp_bins[[snp]][context[1], context[2]] + 1
+      }
       line <- readLines(vcf_file, n=1)
    }
    close(vcf_file)
