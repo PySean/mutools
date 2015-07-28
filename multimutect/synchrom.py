@@ -180,22 +180,28 @@ class Synchrom():
     Also creates a file 'chrs.list' in the output directory.
     """
     def build_command(self, sample_pair):
-        tumor, normal = map(os.path.basename, sample_pair)
+        tumor, normal = sample_pair
+        #Remove any possible dirpath components for output dir name
+        #creation.
+        tumor_dir, normal_dir = map(os.path.basename, sample_pair)
         filedir = ""
         #The directory of vcf files is <tumorbasename>_<normalbasename>,
         #within the parent output directory
-        tumdir, normdir = tumor.split('.bam')[0], normal.split('.bam')[0]
-        #Create the output directory name, with a '/' (or '\') at the end.
+        tumdir, normdir = (tumor_dir.split('.bam')[0],
+                           normal_dir.split('.bam')[0])
         if normal != '':
+            #Create the output directory name, with a '/' (or '\') at the end.
             filedir = os.path.join(self.outputdir, (tumdir + '_' + normdir), '')
-            normal = os.path.join(self.inputdir, normal)
+            if self.inputdir is not None:
+                normal = os.path.join(self.inputdir, normal_dir)
             normal = '--input_file:normal ' + normal
         else:
             filedir = os.path.join(self.outputdir, tumdir, '')
         os.makedirs(filedir.strip('/'))
         #No possibility for tumor to equal '' as the calling function
         #handles this case and returns None as a result.
-        tumor = os.path.join(self.inputdir, tumor)
+        if self.inputdir is not None:
+            tumor = os.path.join(self.inputdir, tumor_dir)
         #Write the chromosome list to the output directory.
         with AlignmentFile(tumor, 'rb') as tumbam:
             with open(os.path.join(filedir, 'chrs.list'), 'w') as chrlist:
