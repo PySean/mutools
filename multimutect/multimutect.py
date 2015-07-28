@@ -97,14 +97,15 @@ if __name__ == '__main__':
             val = subprocess.check_output(cmdlist)
             print('tid: {}, the cmd is: {}'.format(tid, cmd))
         except subprocess.CalledProcessError as cpe:
+            errfilepath = ''
             if not os.path.exists('errors'):
                 try:
                     os.mkdir('errors')
                 except OSError as O:
                     sys.stderr.write("Couldn't make directory 'errors':{}{}".
                                      format(O, os.linesep))
-                errfilepath = os.path.join('errors', 
-                                           'thread{}.err'.format(tid))
+            errfilepath = os.path.join('errors', 
+                                       'thread{}.err'.format(tid))
             #Log error to a file rather than write to stderr.
             with open(errfilepath, 'w') as errfile:
                 errfile.write(('I crashed with the command line:{}'
