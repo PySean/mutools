@@ -8,6 +8,7 @@ import argparse
 import os
 import sys
 from subprocess import check_output
+from os.path import basename
 try:
     from arguer import makeparser
 except ImportError as I:
@@ -22,7 +23,7 @@ parser.add_argument('-l', '--listing', type=str,
                     help=('A path specifying the list of samples to'
                           'concatenate. Useful if the BAM files used'
                           'for the analysis were created on a per-'
-                          'chromosome basis. Uses chrs.list by default.')
+                          'chromosome basis. Uses chrs.list by default.'),
                     default='chrs.list')
 args = parser.parse_args()
 
@@ -49,7 +50,9 @@ def vcf_catenate(parent, reference, gatkpath, listfile, delete):
     for dirpath, dirnames, filenames in os.walk(parent):
         for directory in dirnames:
             d_path = os.path.join(dirpath, directory)
-            listing = os.path.join(d_path, listfile)
+            listing = listfile
+            if listfile == 'chrs.list':
+                listing = os.path.join(d_path, listing)
             result_name = directory + '.vcf'
             status_name = directory + '.list'
             outpath = os.path.join(dirpath, result_name)
@@ -57,7 +60,7 @@ def vcf_catenate(parent, reference, gatkpath, listfile, delete):
             #status directory.
             if os.path.exists(listing):
                 with open(listing, 'r') as chrfile:
-                    chrlist = [os.path.join(d_path, c.strip()) + '.vcf' 
+                    chrlist = [os.path.join(d_path, basename(c.strip())) + '.vcf' 
                                for c in chrfile]
                     #Keep original chrlist for deletions.
                     realchrs = chr_validate(chrlist)
@@ -73,7 +76,8 @@ def vcf_catenate(parent, reference, gatkpath, listfile, delete):
                         map(os.unlink, chrlist)
                         #No index file is created for empty vcfs.
                         map(lambda x: os.unlink(x + '.idx'), realchrs)
-                        os.unlink(listing)
+                        if listfile == 'chrs.list':
+                            os.unlink(listing)
                         os.rmdir(d_path)
 
 if os.path.exists(args.gatkpath):
