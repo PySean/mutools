@@ -73,7 +73,7 @@ def vcf_combine(directory, vcf_files, reference, outfile, gatkpath,
     elif directory != '.':
         vcfs = filter(lambda x: x.endswith('.vcf'), os.listdir(directory))
     else: #VCF files were specified on the cmd line.
-        vcfs = filter(lambda x: os.path.exists(x), os.listdir(directory))
+        vcfs = filter(lambda x: os.path.exists(x), vcf_files)
 
     path_vcfs = [os.path.join(directory, s) for s in vcfs]
     #Use the basenames of the vcf files for more descriptive 'set='
