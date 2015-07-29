@@ -5,9 +5,11 @@
 """
 from itertools import izip
 from synchrom import Synchrom
+from time import time
 import argparse
 import multiprocessing
 import os #For os.path.exists() to check for file existence and os.walk.
+import re
 import subprocess
 import sys
 try:
@@ -82,6 +84,9 @@ if __name__ == '__main__':
     parser.add_argument('--process_whole_bam', action='store_true',
                         help=('Process the entire BAM file at once instead '
                               'of single chromosomes at a time'))
+    parser.add_argument('--statistics', action='store_true',
+                        help=(('Report statistics on execution time and ')
+                               ' threads used.'))
     args = parser.parse_args()
     if not os.path.exists(args.mupath):
         sys.stderr.write('Error: path to {} does not exist\n'
@@ -111,8 +116,8 @@ if __name__ == '__main__':
                 errfile.write(('I crashed with the command line:{}'
                                ' {}.{} You may need to use the default '
                                ' option for individual'
-                               ' chromosome processing option instead, '
-                               ' or a manual command line '
+                               ' chromosome processing instead, '
+                               ' or a command line '
                                ' accomodating more '
                                ' memory for the Java heap.'
                                ).format(os.linesep, cmd, os.linesep))
@@ -128,8 +133,39 @@ if __name__ == '__main__':
 
     synchrom = Synchrom(args)
     infinity = infinigen()
-    pids = 0
+    start_time = 0
+    end_time = 0
     with ThreadPoolExecutor(max_workers=numthreads) as threader:
         results = threader.map(procfun, izip(infinity, synchrom.commands))
+        start_time = time()
         for i in results:
             print i
+        end_time = time()
+    if args.statistics == True: #TODO add statistics option to cmdline.
+        bam_gigs = 0
+        cpu_cores = multiprocessing.cpu_count()
+        #Gather data for initial run.
+        if not os.path.exists('stats.txt'):
+            bams = []
+            if args.bamlistfile is not None:
+                with open(args.bamlistfile, 'r') as blf:
+                    bams = [re.split('\s+', b.strip()) for b in blf]
+            else:
+                bams = [b.split(':') for b in args.pairs]
+            #Flatten the list and remove empty strings.
+            bams = [i for pair in bams for pair in i if i != '']
+            #Prepend input directory name to each bam filename in the list.
+            bams = [os.path.join(args.inputdir, b) for b in bams]
+            #Attain the size (in bytes) of the processed BAM data.
+            bam_gigs = sum([os.stat(b).st_size for b in bams])
+        #stats.txt is opened in append mode, as it will take mult.
+        #runs to get data for thread performance.
+        with open('stats.txt', 'a') as filestats:
+            #Check if the file has been created + written to already.
+            if os.stat('stats.txt').st_size == 0:
+                filestats.write('CPU cores: {}\n'.format(cpu_cores))
+                filestats.write('Total BAM data processed: {} bytes\n'
+                                .format(bam_gigs))
+                filestats.write('Threads\tTime\n')
+            thread_and_time = '{} {}\n'.format(numthreads, end_time - start_time)
+            filestats.write(thread_and_time)
