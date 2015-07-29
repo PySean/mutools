@@ -48,6 +48,10 @@ Combines all vcfs in a directory with CombineVariants.
 """
 def vcf_combine(directory, vcf_files, reference, outfile, gatkpath, 
                 delete_input_vcfs, listing, without_nonecol):
+    if listing is not None and vcf_files is not None:
+        sys.stderr.write(("You don't need a listing when you have specified"
+                         "VCFS on the command line"))
+        sys.exit(1)
     #Use the cwd if VCF files are specified on the command line.
     if directory is None:
         directory = '.'
