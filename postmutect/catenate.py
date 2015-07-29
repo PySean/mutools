@@ -35,9 +35,10 @@ def chr_validate(chrlist):
     return filter(fil_func, chrlist)
 
 """
-Concatenates all vcfs under a directory. 
+Concatenates all vcfs under a directory or on a command line.
 """
-def vcf_catenate(directory, reference, gatkpath, listing, delete_fragments):
+def vcf_catenate(directory, vcfs, reference, gatkpath, listing, 
+                 delete_fragments):
     cmd = ('java -cp {gatk} org.broadinstitute.gatk.tools.CatVariants'
            ' -assumeSorted -R' 
            ' {ref} -out {{out}} {{vcfs}}').format(gatk=gatkpath, 
@@ -106,11 +107,14 @@ cat_func = vcf_catenate
 if args.listing != 'chrs.list':
     cat_func = minicat
 
+#Filter out unused "vcf" option.
+arg_dict = {key: value for (key, value) in vars(args).iteritems()
+            if key != 'vcf_files'}
 if os.path.exists(args.gatkpath):
-    cat_func(**vars(args))
+    cat_func(**arg_dict)
 #Try again with the default.
 elif os.path.exists('gatk.jar'):
-    cat_func(**vars(args))
+    cat_func(**arg_dict)
 else:
     sys.stderr.write('Please provide an existent gatk jar filepath.')
     sys.exit(1)

@@ -2,6 +2,9 @@
 """
 "combine.py", by Sean Soderman
 Combines all vcfs *in* a directory using the GATK tool CombineVariants.
+
+To accomodate the case of only a few VCF files needing combining,
+the user may also specify VCFs directly on the command line.
 """
 import os
 import re
@@ -43,8 +46,11 @@ def vformat(filename):
 """
 Combines all vcfs in a directory with CombineVariants.
 """
-def vcf_combine(directory, reference, outfile, gatkpath, 
+def vcf_combine(directory, vcf_files, reference, outfile, gatkpath, 
                 delete_input_vcfs, listing, without_nonecol):
+    #Use the cwd if VCF files are specified on the command line.
+    if directory is None:
+        directory = '.'
     cmd = ('java -jar {gatk} -T CombineVariants -R {ref}' 
            ' -nt 4 {{vcfs}} -o {outfile}'
            ' -dt NONE --genotypemergeoption UNSORTED')
@@ -64,8 +70,10 @@ def vcf_combine(directory, reference, outfile, gatkpath,
                        if not normal.isspace() 
                        else re.sub('.bam', '.vcf', tumor)), tumors, normals)
             vcfs = [x.strip() for x in vcfs]
-    else:
+    elif directory != '.':
         vcfs = filter(lambda x: x.endswith('.vcf'), os.listdir(directory))
+    else: #VCF files were specified on the cmd line.
+        vcfs = filter(lambda x: os.path.exists(x), os.listdir(directory))
 
     path_vcfs = [os.path.join(directory, s) for s in vcfs]
     #Use the basenames of the vcf files for more descriptive 'set='
