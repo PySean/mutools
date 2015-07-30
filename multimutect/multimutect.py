@@ -85,7 +85,7 @@ if __name__ == '__main__':
                         help=('Process the entire BAM file at once instead '
                               'of single chromosomes at a time'))
     parser.add_argument('--statistics', action='store_true',
-                        help=(('Report statistics on execution time and ')
+                        help=('Report statistics on execution time and '
                                ' threads used.'))
     args = parser.parse_args()
     if not os.path.exists(args.mupath):
