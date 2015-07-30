@@ -82,10 +82,9 @@ make_bins <- function() {
    for (i in nucleotides) {
       for (j in nucleotides) {
          if (i != j) {
-            #data.frame copies data frames passed to it.
-            #This is necessary so that all the SNP indices don't point
-            #to the same data frame.
-            matlist[[paste0(i, '>', j)]] <- data.frame(matlab)
+            #R copies entire data structures with assignment, rather than
+            #passing a pointer...
+            matlist[[paste0(i, '>', j)]] <- matlab
          }
       }
    }
@@ -103,7 +102,6 @@ get_context <- function(genome_pos, offset, line_bytes, line_nts, ref_file) {
               ifelse(genome_rem, genome_rem, line_nts) +
               offset - 2 #Get single context nucleotide before SNP.
 
-   #print(paste('chr offset: ', chr_off, 'genome pos: ', genome_pos))
    seek(ref_file, where=chr_off, origin='start')
    counter <- 1
    context_string <- character(3)
@@ -119,9 +117,7 @@ get_context <- function(genome_pos, offset, line_bytes, line_nts, ref_file) {
       if (char != '\n') {
          context_string[counter] <- char
          counter <- counter + 1
-      } else {
-         #print(paste('Newline encountered at position', genome_pos))
-      }
+      } 
    }
    return(context_string)
 }
@@ -150,26 +146,23 @@ gather_data <- function(fai_data, vcf_name, ref_name) {
          return(snp_bins) #TODO: Return approp. data structure.
       info <- vcf_info(line)
       offset <- contigs[[info$chrom]]
-      #print(paste('Pos:', info$pos, 
-      #            'offset:', offset, 
-      #            'line bytes:', line_bytes, 
-      #            'line nts:', line_nts, 
-      #            'ref. file:', ref_file))
       context <- get_context(info$pos, offset, line_bytes, line_nts,  ref_file)
       #Some SNPS have multiple possibilities.. account for them.
       alts <- strsplit(info$alt, split=',')[[1]]
       for (i in alts) {
          snp <- paste0(info$ref, '>', i)
-         snp_bins[[snp]][context[1], context[2]] <- 
-                 snp_bins[[snp]][context[1], context[2]] + 1
+         snp_bins[[snp]][context[1], context[3]] <- 
+                 snp_bins[[snp]][context[1], context[3]] + 1
       }
       line <- readLines(vcf_file, n=1)
    }
    close(vcf_file)
    close(ref_file)
+   return(snp_bins)
 }
 
 vcf <- args[1]
 refseq <- args[2]
 fai_file <- args[3]
 gather_data(fai_fields(file(fai_file, 'r')), vcf, refseq)
+''
