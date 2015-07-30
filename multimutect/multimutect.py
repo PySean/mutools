@@ -165,8 +165,8 @@ if __name__ == '__main__':
             #Initialize the file if it is of size zero.
             if os.stat(statfile).st_size == 0:
                 filestats.write('CPU cores: {}\n'.format(cpu_cores))
-                filestats.write('Total BAM data processed: {} bytes\n'
+                filestats.write('Total BAM data processed: {}\n'
                                 .format(bam_gigs))
                 filestats.write('Threads\tTime\n')
-            thread_and_time = '{} {}\n'.format(numthreads, end_time - start_time)
+            thread_and_time = '{}\t{}\n'.format(numthreads, end_time - start_time)
             filestats.write(thread_and_time)
