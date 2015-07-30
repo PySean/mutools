@@ -84,7 +84,7 @@ if __name__ == '__main__':
     parser.add_argument('--process_whole_bam', action='store_true',
                         help=('Process the entire BAM file at once instead '
                               'of single chromosomes at a time'))
-    parser.add_argument('--statistics', action='store_true',
+    parser.add_argument('--statistics', type=str,
                         help=('Report statistics on execution time and '
                                ' threads used.'))
     args = parser.parse_args()
@@ -141,11 +141,12 @@ if __name__ == '__main__':
         for i in results:
             print i
         end_time = time()
-    if args.statistics == True: #TODO add statistics option to cmdline.
+    if args.statistics is not None:
+        statfile = args.statistics
         bam_gigs = 0
         cpu_cores = multiprocessing.cpu_count()
         #Gather data for initial run.
-        if not os.path.exists('stats.txt'):
+        if not os.path.exists(statfile):
             bams = []
             if args.bamlistfile is not None:
                 with open(args.bamlistfile, 'r') as blf:
@@ -160,9 +161,9 @@ if __name__ == '__main__':
             bam_gigs = sum([os.stat(b).st_size for b in bams])
         #stats.txt is opened in append mode, as it will take mult.
         #runs to get data for thread performance.
-        with open('stats.txt', 'a') as filestats:
-            #Check if the file has been created + written to already.
-            if os.stat('stats.txt').st_size == 0:
+        with open(statfile, 'a') as filestats:
+            #Initialize the file if it is of size zero.
+            if os.stat(statfile).st_size == 0:
                 filestats.write('CPU cores: {}\n'.format(cpu_cores))
                 filestats.write('Total BAM data processed: {} bytes\n'
                                 .format(bam_gigs))
