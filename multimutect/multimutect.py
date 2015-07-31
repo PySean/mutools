@@ -136,14 +136,12 @@ if __name__ == '__main__':
     infinity = infinigen()
     start_time = 0
     end_time = 0
-    """
     with ThreadPoolExecutor(max_workers=numthreads) as threader:
         results = threader.map(procfun, izip(infinity, synchrom.commands))
         start_time = time()
         for i in results:
             print i
         end_time = time()
-    """
     if args.statistics is not None:
         statfile = args.statistics
         bam_gigs = 0
