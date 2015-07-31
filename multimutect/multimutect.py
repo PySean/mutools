@@ -8,7 +8,7 @@ from synchrom import Synchrom
 from time import time
 import argparse
 import multiprocessing
-import os #For os.path.exists() to check for file existence and os.walk.
+import os
 import re
 import subprocess
 import sys
@@ -89,8 +89,8 @@ if __name__ == '__main__':
                                ' threads used.'))
     args = parser.parse_args()
     if not os.path.exists(args.mupath):
-        sys.stderr.write('Error: path to {} does not exist\n'
-                         .format(args.mupath))
+        sys.stderr.write('Error: path to {} does not exist. cwd: {}\n'
+                         .format(args.mupath, os.getcwd()))
         sys.exit(1)
     #Create the threads and the parent output directory.
     numthreads = args.numthreads
@@ -120,7 +120,8 @@ if __name__ == '__main__':
                                ' or a command line '
                                ' accomodating more '
                                ' memory for the Java heap.'
-                               ).format(os.linesep, cmd, os.linesep))
+                               ' The specific problem was {}\n'
+                               ).format(os.linesep, cmd, os.linesep, cpe))
             return 'Thread {} executed unsuccessfully'.format(tid)
         return 'Thread {} executed successfully'.format(tid)
 
@@ -135,12 +136,14 @@ if __name__ == '__main__':
     infinity = infinigen()
     start_time = 0
     end_time = 0
+    """
     with ThreadPoolExecutor(max_workers=numthreads) as threader:
         results = threader.map(procfun, izip(infinity, synchrom.commands))
         start_time = time()
         for i in results:
             print i
         end_time = time()
+    """
     if args.statistics is not None:
         statfile = args.statistics
         bam_gigs = 0
@@ -150,11 +153,12 @@ if __name__ == '__main__':
             bams = []
             if args.bamlistfile is not None:
                 with open(args.bamlistfile, 'r') as blf:
-                    bams = [re.split('\s+', b.strip()) for b in blf]
+                    bams = [re.split('\s+', b.strip()) for b in blf
+                            if re.search('.*bam', b)]
             else:
                 bams = [b.split(':') for b in args.pairs]
             #Flatten the list and remove empty strings.
-            bams = [i for pair in bams for pair in i if i != '']
+            bams = [i for pair in bams for i in pair if i != '']
             #Prepend input directory name to each bam filename in the list.
             bams = [os.path.join(args.inputdir, b) for b in bams]
             #Attain the size (in bytes) of the processed BAM data.
