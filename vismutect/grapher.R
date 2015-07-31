@@ -4,7 +4,6 @@
 # Program that will read in + visualize data from VCF files, pertaining to
 # allele frequency. It will count certain mutations from certain contexts
 # specified as options on the command line).
-#
 
 #library('ggplot2')
 
@@ -73,22 +72,41 @@ vcf_info <- function(vcf_line) {
 make_bins <- function() {
    nucleotides <- c('A', 'C', 'G', 'T')
    matlist <- list()
-   matlab <- data.frame(row.names=nucleotides)
+   #matlab <- data.frame(row.names=nucleotides)
+   matlab <- NA
+   snps <- character(12) #4 choose 3 possibilities for DNA snps.
+   contexts <- character(16) #4 choose 4 possilities for nt contexts of len=1.
+
    #Initialize & create the matrix that will get copied copiously.
+   #Create the factors (SNP possibilities)
+   snp_ndx <- 1
    for (i in 1:length(nucleotides)) {
-      matlab[[nucleotides[i]]] <- rep(0, 4)
-   }
-   #Initialize & create the list.
-   for (i in nucleotides) {
-      for (j in nucleotides) {
-         if (i != j) {
-            #R copies entire data structures with assignment, rather than
-            #passing a pointer...
-            matlist[[paste0(i, '>', j)]] <- matlab
-         }
+      ref <- nucleotides[i]
+      for (j in nucleotides[nucleotides != ref]){
+         alt <- j
+         snps[snp_ndx] <- paste0(ref, '>', alt)
+         snp_ndx <- snp_ndx + 1
       }
    }
-   return(matlist)
+   print(snps)
+   #Now for the column names.
+   context_ndx <- 1
+   for (i in 1:length(nucleotides)) {
+      preceding_nt <- nucleotides[i]
+      for (j in 1:length(nucleotides)) {
+         succeeding_nt <- nucleotides[j]
+         contexts[context_ndx] <- paste0(preceding_nt, '_', succeeding_nt)
+         context_ndx <- context_ndx + 1
+      }
+   }
+   #Create blank data frame.
+   #Since d.frames don't have "nrow" and ncol, I have to create a matrix 1st.
+   matlab <- matrix(data=rep(rep(0, 12), 16), nrow=12, ncol=16)
+   matlab <- as.data.frame(matlab)
+   #Add the names, then bind the snp factors in as the leftmost column.
+   names(matlab) <- contexts
+   matlab <- cbind(snps=as.factor(snps), matlab)
+   return(matlab)
 }
 
 #Seeks through the FASTA file for desired nucleotide triple, consisting
@@ -140,19 +158,20 @@ gather_data <- function(fai_data, vcf_name, ref_name) {
       if (ezmatch('^#*', line) == '')
          break
    }
-   #Read in pertinent information.
+   #Read in pertinent information, perform binning.
    repeat {
       if (length(line) == 0)
-         return(snp_bins) #TODO: Return approp. data structure.
+         break 
       info <- vcf_info(line)
       offset <- contigs[[info$chrom]]
       context <- get_context(info$pos, offset, line_bytes, line_nts,  ref_file)
+      context <- paste0(context[1], '_', context[3])
       #Some SNPS have multiple possibilities.. account for them.
       alts <- strsplit(info$alt, split=',')[[1]]
       for (i in alts) {
          snp <- paste0(info$ref, '>', i)
-         snp_bins[[snp]][context[1], context[3]] <- 
-                 snp_bins[[snp]][context[1], context[3]] + 1
+         snp_bins[snp_bins$snps == snp,][[context]] <- 
+                 snp_bins[snp_bins$snps == snp,][[context]] + 1
       }
       line <- readLines(vcf_file, n=1)
    }
@@ -164,5 +183,5 @@ gather_data <- function(fai_data, vcf_name, ref_name) {
 vcf <- args[1]
 refseq <- args[2]
 fai_file <- args[3]
-gather_data(fai_fields(file(fai_file, 'r')), vcf, refseq)
-''
+histlist <- gather_data(fai_fields(file(fai_file, 'r')), vcf, refseq)
+#Graph the data!
