@@ -5,7 +5,8 @@
 # allele frequency. It will count certain mutations from certain contexts
 # specified as options on the command line).
 
-#library('ggplot2')
+library('ggplot2')
+library('reshape2')
 
 args <- commandArgs(trailingOnly=TRUE)
 
@@ -72,7 +73,6 @@ vcf_info <- function(vcf_line) {
 make_bins <- function() {
    nucleotides <- c('A', 'C', 'G', 'T')
    matlist <- list()
-   #matlab <- data.frame(row.names=nucleotides)
    matlab <- NA
    snps <- character(12) #4 choose 3 possibilities for DNA snps.
    contexts <- character(16) #4 choose 4 possilities for nt contexts of len=1.
@@ -88,7 +88,6 @@ make_bins <- function() {
          snp_ndx <- snp_ndx + 1
       }
    }
-   print(snps)
    #Now for the column names.
    context_ndx <- 1
    for (i in 1:length(nucleotides)) {
@@ -141,7 +140,7 @@ get_context <- function(genome_pos, offset, line_bytes, line_nts, ref_file) {
 }
 
 #Somewhat conspicuous name, this function reads through a VCF file so it
-#can then seek to the location of the indel and increment "bins" based on
+#can then seek to the location of the SNP and increment "bins" based on
 #what the change is.
 #Returns: A data structure containing the counts and frequencies
 #of mutations. 
@@ -183,5 +182,10 @@ gather_data <- function(fai_data, vcf_name, ref_name) {
 vcf <- args[1]
 refseq <- args[2]
 fai_file <- args[3]
-histlist <- gather_data(fai_fields(file(fai_file, 'r')), vcf, refseq)
+histdata <- gather_data(fai_fields(file(fai_file, 'r')), vcf, refseq)
+#Transform data into "long" format suitable for graphing.
+histmelt <- melt(histdata, id.vars='snps', variable.name='context',
+                 value.name='count')
 #Graph the data!
+qplot(x=context, y=count, data=histmelt, 
+      geom='histogram', fill=snps, stat='identity')
