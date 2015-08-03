@@ -15,10 +15,8 @@ if (length(args) < 3) {
    stop(status=1)
 }
 
-#Function that reads a file connection to a fai file
-#Returns: A list wrapping a list indexed by contig names
-#that are each associated with a cumulative byte offset, as well
-#as the line length in bytes for this fasta file.
+#Function that reads a file connection to a FASTA index file.
+#Returns: A descriptive data frame representative of the data in the file.
 fai_fields <- function(fai_file) {
    contigs <- list()
    col_names <- c('contig', 'sz', 'pos', 'line_nts', 'line_bytes')
@@ -26,11 +24,8 @@ fai_fields <- function(fai_file) {
                            col.names=col_names)
    #Since it's read in as a factor, convert the contig col to char vectors.
    fai_table$contig <- as.character(fai_table$contig)
-   contigs[fai_table$contig] <- fai_table$pos #sapply(fai_table$contig, getaccum)
    close(fai_file)
-   return(list(contigs=contigs, 
-               line_nts=fai_table$line_nts[1], 
-               line_bytes=fai_table$line_bytes[1]))
+   return(fai_table)
 }
 
 #Utility function for making regex matches.
@@ -146,9 +141,8 @@ get_context <- function(genome_pos, offset, line_bytes, line_nts, ref_file) {
 #of mutations. 
 gather_data <- function(fai_data, vcf_name, ref_name) {
    snp_bins <- make_bins()
-   contigs <- fai_data$contigs
-   line_bytes <- fai_data$line_bytes
-   line_nts <- fai_data$line_nts
+   #line_bytes <- fai_data$line_bytes
+   #line_nts <- fai_data$line_nts
    vcf_file <- file(vcf_name, 'r')
    ref_file <- file(ref_name, 'rb', raw=TRUE)
    line <- character()
@@ -162,7 +156,9 @@ gather_data <- function(fai_data, vcf_name, ref_name) {
       if (length(line) == 0)
          break 
       info <- vcf_info(line)
-      offset <- contigs[[info$chrom]]
+      offset <- fai_data[fai_data$contig == info$chrom,]$pos
+      line_nts <- fai_data[fai_data$contig == info$chrom,]$line_nts
+      line_bytes <- fai_data[fai_data$contig == info$chrom,]$line_bytes
       context <- get_context(info$pos, offset, line_bytes, line_nts,  ref_file)
       context <- paste0(context[1], '_', context[3])
       #Some SNPS have multiple possibilities.. account for them.
@@ -179,6 +175,7 @@ gather_data <- function(fai_data, vcf_name, ref_name) {
    return(snp_bins)
 }
 
+
 vcf <- args[1]
 refseq <- args[2]
 fai_file <- args[3]
@@ -187,5 +184,6 @@ histdata <- gather_data(fai_fields(file(fai_file, 'r')), vcf, refseq)
 histmelt <- melt(histdata, id.vars='snps', variable.name='context',
                  value.name='count')
 #Graph the data!
-qplot(x=context, y=count, data=histmelt, 
-      geom='histogram', fill=snps, stat='identity')
+qplot(x=context, y=count, data=histmelt, facets=snps ~ . ,
+       geom='bar', fill=snps, stat='identity') + 
+       theme(axis.text.y=element_text(size=9))
