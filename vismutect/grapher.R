@@ -1,9 +1,12 @@
 #!/usr/bin/Rscript
 #
-# "grapher.R", by Sean Soderman
-# Program that will read in + visualize data from VCF files, pertaining to
-# allele frequency. It will count certain mutations from certain contexts
-# specified as options on the command line).
+#"grapher.R", by Sean Soderman
+#Program that will read in + visualize data from VCF files, pertaining to
+#allele frequency. It will count mutations from any context.
+#The desired allele frequency threshold can be specified on the command line
+#as a range, ex: 0 <= AF <= .5.
+#By default, the alt allele with the maximum allelic frequency is 
+#used. Otherwise, SNPS falling out of the specified range are ignored.
 
 library('ggplot2')
 library('reshape2')
@@ -11,7 +14,7 @@ library('reshape2')
 args <- commandArgs(trailingOnly=TRUE)
 
 if (length(args) < 3) {
-   print(paste('Usage:', './grapher.R', '<vcf>', '<refseq>', '<fai>'))
+   print(paste('Usage:', './grapher.R', 'vcf', 'refseq', 'fai', '[frequency]'))
    stop(status=1)
 }
 
@@ -48,15 +51,14 @@ ezmatch <- function(regex, string) {
 #Allele frequency (NOTE: I don't know if there is a way to make VarScan
 #VCF files generate this field. At the moment this will only do for MuTect)
 vcf_info <- function(vcf_line) {
-   fields <- list(chrom='', pos=0, ref='', alt='', freq='')
+   fields <- list(chrom='', pos=0, ref='', alt='', freqs=0)
    mstr <- '(\\S*)\\s+(\\S*)\\s+\\S*\\s+(\\S*)\\s+(\\S*).*AF=([0-9.,]*);'
    matches <- ezmatch(mstr, vcf_line) 
    fields$chrom <- matches[2]
    fields$pos <- as.numeric(matches[3])
    fields$ref <- matches[4]
    fields$alt <- matches[5]
-   frequencies <- sapply(strsplit(matches[6], ','), as.numeric)
-   fields$freq <- as.vector(frequencies)
+   fields$freqs <- as.numeric(strsplit(matches[6], ',')[[1]])
    return (fields)
 }
 
@@ -127,6 +129,10 @@ get_context <- function(genome_pos, offset, line_bytes, line_nts, ref_file) {
    while (counter <= 3) {
       char <- rawToChar(readBin(ref_file, what=raw(), n=1))
       if (char != '\n') {
+         #In the rare case an ambiguous nt is picked up, swap it with another.
+         if (char == 'N' || char == 'n') {
+            char <- sample(c('A', 'G', 'C', 'T'), 1)
+         }
          context_string[counter] <- char
          counter <- counter + 1
       } 
@@ -134,13 +140,36 @@ get_context <- function(genome_pos, offset, line_bytes, line_nts, ref_file) {
    return(context_string)
 }
 
+#Checks the frequency of the alt allele(s), returning the allele
+#with the highest frequency that falls within the frequency range.
+check_freq <- function(inequality, alts, freq) {
+      if ( (length(inequality) == 0) || inequality[1] == 'freq') {
+         print(paste('Please specify the range for allelic frequencies',
+                     'appropriately.'))
+         stop(status=1)
+      }
+      #Evaluate expression for each alt allele.
+      #If more than two satisfy it, return the greater of the two.
+      expr_left <- parse(text=paste(inequality[2], 'freq'))
+      expr_right <- parse(text=paste('freq', inequality[3]))
+      passing_freqs <- freq[eval(expr_left) & eval(expr_right)]
+      #If no allele passes the frequency test, return an empty vector.
+      if (length(passing_freqs) > 0)
+         max_freq <- max(passing_freqs)
+      else
+         return(numeric(0))
+      #If two alleles are at the max and have the same frequency,
+      #return one of them at random.
+      return(sample(x=alts[max_freq == freq], size=1))
+}
 #Somewhat conspicuous name, this function reads through a VCF file so it
 #can then seek to the location of the SNP and increment "bins" based on
 #what the change is.
 #Returns: A data structure containing the counts and frequencies
 #of mutations. 
-gather_data <- function(fai_data, vcf_name, ref_name) {
+gather_data <- function(fai_data, vcf_name, ref_name, range) {
    snp_bins <- make_bins()
+   inequality <- ezmatch('(.*)freq(.*)', range)
    #line_bytes <- fai_data$line_bytes
    #line_nts <- fai_data$line_nts
    vcf_file <- file(vcf_name, 'r')
@@ -163,11 +192,16 @@ gather_data <- function(fai_data, vcf_name, ref_name) {
       context <- paste0(context[1], '_', context[3])
       #Some SNPS have multiple possibilities.. account for them.
       alts <- strsplit(info$alt, split=',')[[1]]
-      for (i in alts) {
-         snp <- paste0(info$ref, '>', i)
-         snp_bins[snp_bins$snps == snp,][[context]] <- 
-                 snp_bins[snp_bins$snps == snp,][[context]] + 1
-      }
+      #By default pick the alt allele with the highest
+      #allelic frequency. If the command line option for AF was used however,
+      #use the highest allelic frequency used in that range.
+      alt <- ifelse(range != '', check_freq(inequality, alts, info$freqs),
+                    max(alts))
+      if (length(alt) == 0) #Frequency interval unsatisfied, skip line.
+         next
+      snp <- paste0(info$ref, '>', alt)
+      snp_bins[snp_bins$snps == snp,][[context]] <- 
+              snp_bins[snp_bins$snps == snp,][[context]] + 1
       line <- readLines(vcf_file, n=1)
    }
    close(vcf_file)
@@ -179,11 +213,25 @@ gather_data <- function(fai_data, vcf_name, ref_name) {
 vcf <- args[1]
 refseq <- args[2]
 fai_file <- args[3]
-histdata <- gather_data(fai_fields(file(fai_file, 'r')), vcf, refseq)
+freq_range <- args[4]
+
+histdata <- gather_data(fai_fields(file(fai_file, 'r')), vcf, refseq,
+                        ifelse(is.na(freq_range), '', freq_range))
 #Transform data into "long" format suitable for graphing.
 histmelt <- melt(histdata, id.vars='snps', variable.name='context',
                  value.name='count')
+legend <- ifelse(!is.na(freq_range), sub(pattern='freq', 
+                                     x=freq_range, 
+                                     replacement=' AF '), '')
 #Graph the data!
+if (legend != '') {
 qplot(x=context, y=count, data=histmelt, facets=snps ~ . ,
        geom='bar', fill=snps, stat='identity') + 
-       theme(axis.text.y=element_text(size=9))
+       theme(axis.text.y=element_text(size=9), legend.position='none') + 
+       ggtitle(legend)
+} else {
+qplot(x=context, y=count, data=histmelt, facets=snps ~ . ,
+       geom='bar', fill=snps, stat='identity') + 
+       theme(axis.text.y=element_text(size=9), legend.position='none') +
+       ggtitle('SNPs and their contexts')
+}
