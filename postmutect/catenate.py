@@ -8,7 +8,7 @@ import argparse
 import os
 import re
 import sys
-from subprocess import check_output
+from subprocess import check_output, CalledProcessError
 try:
     from arguer import makeparser
 except ImportError as I:
@@ -19,7 +19,7 @@ parser = makeparser(('Concatenates the vcf files within the subdirectories'
                      ' created by multimutect.'))
 parser.add_argument('--delete_fragments', action='store_true',
                     help='Delete files utilized for catenation')
-parser.add_argument('-l', '--listing', type=str,
+parser.add_argument('-l', '--listfile', type=str,
                     help=('A path specifying the list of samples to'
                           'concatenate. Useful if the BAM files used'
                           'for the analysis were created on a per-'
@@ -37,7 +37,7 @@ def chr_validate(chrlist):
 """
 Concatenates all vcfs under a directory or on a command line.
 """
-def vcf_catenate(directory, vcfs, reference, gatkpath, listing, 
+def vcf_catenate(directory, vcf_files, reference, gatkpath, listfile, 
                  delete_fragments):
     cmd = ('java -cp {gatk} org.broadinstitute.gatk.tools.CatVariants'
            ' -assumeSorted -R' 
@@ -46,7 +46,7 @@ def vcf_catenate(directory, vcfs, reference, gatkpath, listing,
     for dirpath, dirnames, filenames in os.walk(directory):
         for dir in dirnames:
             d_path = os.path.join(dirpath, dir)
-            listing = os.path.join(d_path, listing)
+            listing = os.path.join(d_path, listfile)
             result_name = dir + '.vcf'
             outpath = os.path.join(dirpath, result_name)
             #Make sure the listing file exists and that this isn't the
@@ -62,7 +62,10 @@ def vcf_catenate(directory, vcfs, reference, gatkpath, listing,
                     #-V.
                     vseries = "".join(['-V ' + c + ' ' for c in realchrs])
                     final_cmd = cmd.format(out=outpath, vcfs=vseries)
-                    check_output(final_cmd.split())
+                    try:
+                        check_output(final_cmd.split())
+                    except CalledProcessError as cpe:
+                        sys.stderr.write('Problem: {}\n'.format(cpe))
                     #Clean up leftover files after combining them.
                     #Also cleans up .idx files and directories.
                     if delete_fragments == True:
@@ -71,20 +74,22 @@ def vcf_catenate(directory, vcfs, reference, gatkpath, listing,
                         map(lambda x: os.unlink(x + '.idx'), realchrs)
                         os.unlink(listing)
                         os.rmdir(d_path)
+            else:
+                print("I don't exist: {}".format(listing))
 """
 Smaller concatenation function for the case of a single directory with
 VCFs generated from BAM files each representing single chromosomes.
 """
-def minicat(directory, reference, gatkpath, listing, delete_fragments):
+def minicat(directory, reference, gatkpath, listfile, delete_fragments):
     cmd = ('java -cp {gatk} org.broadinstitute.gatk.tools.CatVariants'
            ' -assumeSorted -R' 
            ' {ref} -out {{out}} {{vcfs}}').format(gatk=gatkpath, 
                                                 ref=reference)
     file_list = []
-    if os.path.exists(directory) and os.path.exists(listing):
-        with open(listing, 'r') as listfile:
+    if os.path.exists(directory) and os.path.exists(listfile):
+        with open(listfile, 'r') as lfile:
             #Convert .bam extension to .vcf.
-            file_vcfs = [re.sub('\.bam', '.vcf', bam) for bam in listfile]
+            file_vcfs = [re.sub('\.bam', '.vcf', bam) for bam in lfile]
             file_list = [os.path.join(directory, 
                                       os.path.basename(vcf.strip()))
                         for vcf in file_vcfs]
@@ -104,17 +109,17 @@ def minicat(directory, reference, gatkpath, listing, delete_fragments):
         map(lambda x: os.unlink(x + '.idx'), file_list)
 
 cat_func = vcf_catenate
-if args.listing != 'chrs.list':
+if args.listfile != 'chrs.list':
     cat_func = minicat
 
-#Filter out unused "vcf" option.
-arg_dict = {key: value for (key, value) in vars(args).iteritems()
-            if key != 'vcf_files'}
+#Filter out unused "listing" option.
+#arg_dict = {key: value for (key, value) in vars(args).iteritems()
+#            if key != 'vcf_files'}
 if os.path.exists(args.gatkpath):
-    cat_func(**arg_dict)
+    cat_func(**vars(args))
 #Try again with the default.
 elif os.path.exists('gatk.jar'):
-    cat_func(**arg_dict)
+    cat_func(**vars(args))
 else:
     sys.stderr.write('Please provide an existent gatk jar filepath.')
     sys.exit(1)
