@@ -20,7 +20,7 @@ parser = makeparser(('Concatenates the vcf files within the subdirectories'
 parser.add_argument('--delete_fragments', action='store_true',
                     help='Delete files utilized for catenation')
 parser.add_argument('-l', '--listfile', type=str,
-                    help=('A path specifying the list of samples to'
+                    help=('A list specifying the samples to'
                           'concatenate. Useful if the BAM files used'
                           'for the analysis were created on a per-'
                           'chromosome basis. Uses chrs.list by default.'),
@@ -37,8 +37,7 @@ def chr_validate(chrlist):
 """
 Concatenates all vcfs under a directory or on a command line.
 """
-def vcf_catenate(directory, vcf_files, reference, gatkpath, listfile, 
-                 delete_fragments):
+def vcf_catenate(directory, reference, gatkpath, listfile, delete_fragments):
     cmd = ('java -cp {gatk} org.broadinstitute.gatk.tools.CatVariants'
            ' -assumeSorted -R' 
            ' {ref} -out {{out}} {{vcfs}}').format(gatk=gatkpath, 
@@ -112,9 +111,9 @@ cat_func = vcf_catenate
 if args.listfile != 'chrs.list':
     cat_func = minicat
 
-#Filter out unused "listing" option.
-#arg_dict = {key: value for (key, value) in vars(args).iteritems()
-#            if key != 'vcf_files'}
+#Filter out unused "vcf_files" option (used in combine.py.).
+arg_dict = {key: value for (key, value) in vars(args).iteritems()
+            if key != 'vcf_files'}
 if os.path.exists(args.gatkpath):
     cat_func(**vars(args))
 #Try again with the default.

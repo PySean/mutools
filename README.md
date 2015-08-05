@@ -31,8 +31,12 @@ This should be sufficient to prepare your BAM files for processing by MuTect.
 The postprocessing steps are different depending on how you go about running
 multimutect. If you didn't use the --process\_whole\_bam option, you will need
 to run catenate.py on your directory before combine.py, otherwise combine.py
-is enough. This will produce a single VCF file with columns corresponding to
-each sample used in MuTect's analysis.
+is enough. If you've just processed a directory filled with chromosomal regions
+(i.e., chromosome1.bam, chromosome2.bam...)
+with the --process\_whole\_bam option, however, you will only need to run catenate.py
+with the --listfile option. Either way, appropriate processing will 
+produce a single VCF file with columns corresponding to each sample used 
+in MuTect's analysis.
 
 Unless you use an option provided by combine.py, you will also have a leftover
 directory of VCF files. I leave this choice up to the user, as multiple VCF

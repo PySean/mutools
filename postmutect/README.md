@@ -13,7 +13,8 @@ Concatenates all vcf "pieces" generated from a BAM file together.
 ##Summary
 ```
 ./catenate.py -d input_dir -r fasta
-              [-h] [-g gatkpath]
+              [-h] [-g gatkpath] [--delete_fragments] 
+              [-l sample_list_file]
 ```
 - `-d`
 
@@ -29,6 +30,13 @@ Concatenates all vcf "pieces" generated from a BAM file together.
 
   `--gatkpath`: The path to the gatk jar file. This is a file named 'gatk.jar'
   in the current working directory, by default.
+
+- `--delete_fragments`: Deletes all files within the directory used
+  for catenation.
+ 
+- `-l`
+
+  `--listfile`: A list specifying the the samples to concatenate.
 
 ##combine
 The command you'd use after running multimutect with the --process\_whole\_bam
