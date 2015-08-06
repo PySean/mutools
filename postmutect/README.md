@@ -36,7 +36,9 @@ Concatenates all vcf "pieces" generated from a BAM file together.
  
 - `-l`
 
-  `--listfile`: A list specifying the the samples to concatenate.
+  `--listfile`: A list specifying the the samples to concatenate. 
+   Useful for when you have VCF files generated from BAM files that correspond
+   to each chromosome region.
 
 ##combine
 The command you'd use after running multimutect with the --process\_whole\_bam

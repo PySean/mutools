@@ -8,7 +8,7 @@ import sys
 from subprocess import check_output
 
 if len(sys.argv) < 2:
-    sys.stderr.write('Usage: {} <bamdir>'.format(sys.argv[0]))
+    sys.stderr.write('Usage: {} <bamdir>\n'.format(sys.argv[0]))
     sys.exit(1)
 
 directory = sys.argv[1]

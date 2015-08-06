@@ -1,10 +1,11 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python
 """
 'mapqto0.py', by Sean Soderman
 Sets the MAPQ value of all unmapped reads to zero for each bam file in the
 specified directory.
 """
 import sys
+import os
 #Some preamble code:
 #Check for packages that have pysam as a subdirectory and push them to
 #the end of sys.path to avoid any possibility of the wrong pysam version
