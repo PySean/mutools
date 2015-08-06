@@ -44,3 +44,12 @@ files may be desired and the combine phase may be omitted entirely.
 
 Further documentation for each tool is contained within README files inside their
 respective directories.
+
+##Installation
+
+Simply execute `./install.sh` after making it executable with 
+`chmod 755 install.sh` (if it isn't already). This will put each utility in
+/usr/bin, with the ".py" extension left off. This way you can call them
+from any directory without having to prepend the './'. For example:
+
+multimutect.py -f hg19.fa -b bamfiles.txt -i mysamples -o outputvcfs
