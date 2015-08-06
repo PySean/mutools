@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-#Simple symlink installation script for MuTools.
+#Simple installation script for MuTools. Simply appends aliases to each
+#tool at the end of the user's home directory.
 
-
-ln -s $(pwd)/multimutect/multimutect.py /usr/bin/multimutect
+echo '#The following are aliases to each MuTools utility.' >> ~/.bashrc
+echo "alias multimutect=$(pwd)/multimutect/multimutect.py" >> ~/.bashrc
 for i in $( echo premutect/*.py ); do
-   if [ "$(basename $i)" = '__init__.py' ]
+   base=$(basename $i .py)
+   if [ "$base" = "__init__" ]
       then continue
    else
-      ln -s $(pwd)/$i /usr/bin/$(basename -s .py  $i)
+      echo "alias $base=$(pwd)/$i" >> ~/.bashrc
    fi
 done
-ln -s $(pwd)/postmutect/combine.py /usr/bin/combine
-ln -s $(pwd)/postmutect/catenate.py /usr/bin/catenate
+echo "alias combine=$(pwd)/postmutect/combine.py" >> ~/.bashrc
+echo "alias catenate=$(pwd)/postmutect/catenate.py" >> ~/.bashrc

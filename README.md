@@ -48,8 +48,11 @@ respective directories.
 ##Installation
 
 Simply execute `./install.sh` after making it executable with 
-`chmod 755 install.sh` (if it isn't already). This will put each utility in
-/usr/bin, with the ".py" extension left off. This way you can call them
-from any directory without having to prepend the './'. For example:
+`chmod 755 install.sh` (if it isn't already). This will make an alias
+for each utility within your bashrc. Then, execute `source ~/.bashrc` to
+"activate" these changes in your current shell. This will let you 
+use the suite of tools without having to specify absolute paths to the
+files in the installation directory. For instance, this command line 
+would be possible anywhere:
 
-multimutect.py -f hg19.fa -b bamfiles.txt -i mysamples -o outputvcfs
+`multimutect -f hg19.fa -b bamfiles.txt -i mysamples -o outputvcfs`
