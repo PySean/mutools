@@ -27,7 +27,7 @@ works fine with tumor only data.
 Summary
 -------
 ```
-./multimutect.py -b list_of_bams | -p tumor1.bam:[normal1.bam] tumor2.bam...
+multimutect.py -b list_of_bams | -p tumor1.bam:[normal1.bam] tumor2.bam...
                  -f fasta_file 
                  [--help] [-m path_to_mutect]
                  [-M mutect_options | -c conf_file]

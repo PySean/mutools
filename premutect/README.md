@@ -9,7 +9,7 @@ the specified directory.
 
 ##Summary
 ```
-./addgroups.py -d input_dir 
+addgroups.py -d input_dir 
               [-h] [--info rgid rglb rgpl rgpu rgsm]
               [-p path_to_picard]
 ```
@@ -34,7 +34,7 @@ the specified directory.
 
 ###Example Usage
 ```
-./addgroups.py --inputdir bam_files rgid=grouper rglb=libby rgpu=unit7 rgsm=sample11
+addgroups.py --inputdir bam_files rgid=grouper rglb=libby rgpu=unit7 rgsm=sample11
                --picard_path /opt/picard.jar
 ```
 Here, I've opted to provide my own read-group information. The abbreviated
@@ -52,7 +52,7 @@ the ordering of chromosomes in the supplied FASTA file.
 
 ##Summary
 ```
-./reorder_all.py -f fasta -d directory
+reorder_all.py -f fasta -d directory
               [-h] [-p path_to_picard]
 ```
 
@@ -72,6 +72,6 @@ the ordering of chromosomes in the supplied FASTA file.
 ####reindex and mapqto0
 These two scripts are rather short. Both take the directory of
 bam files as their only positional arguments, so they can be invoked simply
-as ./reindex.py [directory] or ./mapqto0.py [directory]. reindex will leave
+as reindex.py [directory] or mapqto0.py [directory]. reindex will leave
 a BAM index file for every BAM file in the directory, whereas mapqto0
 will leave nothing extra, as it is rewriting each file.

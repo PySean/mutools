@@ -12,7 +12,7 @@ Concatenates all vcf "pieces" generated from a BAM file together.
 
 ##Summary
 ```
-./catenate.py -d input_dir -r fasta
+catenate.py -d input_dir -r fasta
               [-h] [-g gatkpath] [--delete_fragments] 
               [-l sample_list_file]
 ```
@@ -45,6 +45,14 @@ Concatenates all vcf "pieces" generated from a BAM file together.
 ##combine
 The command you'd use after running multimutect with the --process\_whole\_bam
 option, or the one you would use after catenate if you didn't use that option.
+
+##Summary
+```
+combine.py (-d input_dir | -v vcf_files) -r fasta
+              [-h] [-g gatkpath] [--delete_input_vcfs] 
+              [-l sample_list_file] [-w]
+```
+
 - `-d`
 
   `--directory`: The directory of vcf files to combine.
@@ -60,7 +68,8 @@ option, or the one you would use after catenate if you didn't use that option.
 
 - `-v`
 
-   `--vcf_files`: A list of vcfs on the command line to combine.
+   `--vcf_files`: A list of vcfs on the command line to combine. There can be 
+   as many of these as you wish.
 
 - `-o`
 

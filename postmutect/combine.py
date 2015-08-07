@@ -18,13 +18,14 @@ except ImportError as I:
 
 
 parser = makeparser('Combines all vcfs in a directory with CombineVariants')
+parser.add_argument('-v', '--vcf_files', type=str, nargs='*',
+                         help='A list of vcfs on the command line to combine')
 parser.add_argument('-o', '--outfile', type=str,
                     help='The resulting combined output file',
                     default='outfile.vcf')
 parser.add_argument('-D', '--delete_input_vcfs', action='store_true',
                     help=('If this is supplied, delete all vcfs in the'
                     ' directory'))
-                    
 parser.add_argument('-l', '--listing', type=str,
                     help=('If this is supplied, combine VCF files in the order'
                     ' given in the listing file.'))
