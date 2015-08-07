@@ -41,7 +41,11 @@ def umappedq2zero(bamdir):
     if not os.path.exists(bamdir):
         sys.stderr.write('Sorry, but the specified directory does not exist.')
         sys.exit(1)
-    for bam in [bam for bam in os.listdir(bamdir) if bam.endswith('.bam')]:
+
+    bamfiles = os.listdir(bamdir)
+    bampaths = filter(lambda x: x.endswith('.bam'), bamfiles)
+    bampaths = map(lambda x: os.path.join(bamdir, x), bampaths)
+    for bam in bampaths:
         inbam = AlignmentFile(bam, 'rb')
         #Template is specified to maintain the same header information.
         outbam = AlignmentFile('temp.bam', 'wb', template = inbam)
@@ -52,7 +56,7 @@ def umappedq2zero(bamdir):
                 read.mapping_quality = 0
             outbam.write(read) #Don't omit any reads!
         #Overwrite the original with the new file with MAPQs set to zero.
-        os.rename('temp.bam', os.path.join(bamdir, bam))
+        os.rename('temp.bam', bam)
 
 if __name__ == '__main__':
     umappedq2zero(sys.argv[1])
