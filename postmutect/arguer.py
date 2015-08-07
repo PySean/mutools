@@ -13,11 +13,6 @@ def makeparser(description):
 
     input_group.add_argument('-d', '--directory', type=str,
                         help='The input directory containing vcf files',)
-
-    input_group.add_argument('-v', '--vcf_files', type=str, nargs='*',
-                        help='A list of vcfs on the command line to combine')
-                        
-                              
     parser.add_argument('-r', '--reference', type=str,
                         help='The reference genome for the BAM files',
                         required=True)

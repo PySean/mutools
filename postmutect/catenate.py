@@ -111,9 +111,6 @@ cat_func = vcf_catenate
 if args.listfile != 'chrs.list':
     cat_func = minicat
 
-#Filter out unused "vcf_files" option (used in combine.py.).
-arg_dict = {key: value for (key, value) in vars(args).iteritems()
-            if key != 'vcf_files'}
 if os.path.exists(args.gatkpath):
     cat_func(**vars(args))
 #Try again with the default.

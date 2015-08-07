@@ -18,7 +18,7 @@ Concatenates all vcf "pieces" generated from a BAM file together.
 ```
 - `-d`
 
-  `--directory`: The output directory containing the chromosome segment VCFS
+  `--directory`: The input directory containing the chromosome segment VCFS
   for each BAM sample pair.
 
 
@@ -39,10 +39,28 @@ Concatenates all vcf "pieces" generated from a BAM file together.
   `--listfile`: A list specifying the the samples to concatenate. 
    Useful for when you have VCF files generated from BAM files that correspond
    to each chromosome region.
+   *Default*: A file called "chrs.list" contained within each sample's VCF
+   output directory.
 
 ##combine
 The command you'd use after running multimutect with the --process\_whole\_bam
 option, or the one you would use after catenate if you didn't use that option.
+- `-d`
+
+  `--directory`: The directory of vcf files to combine.
+
+- `-r`
+
+   `--reference`: The reference genome used for the BAM files.
+
+- `-g`
+
+   `--gatkpath`: The path to the gatk jar file.
+   *Default*: Looks for a file called gatk.jar in the current working directory.
+
+- `-v`
+
+   `--vcf_files`: A list of vcfs on the command line to combine.
 
 - `-o`
 
