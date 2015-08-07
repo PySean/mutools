@@ -38,7 +38,7 @@ def umappedq2zero(bamdir):
     Opens up both infile and outfile and outputs these modified
     reads to outfile.
     """
-    if not os.exists(bamdir):
+    if not os.path.exists(bamdir):
         sys.stderr.write('Sorry, but the specified directory does not exist.')
         sys.exit(1)
     for bam in [bam for bam in os.listdir(bamdir) if bam.endswith('.bam')]:

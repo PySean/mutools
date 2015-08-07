@@ -33,14 +33,14 @@ directory = args.directory
 cmd = 'java -jar {path} INPUT={{inbam}} REFERENCE={ref} OUTPUT={{outbam}}'
 
 #Validate command line arguments.
-if not os.exists(args.picardpath):
+if not os.path.exists(args.picardpath):
     sys.stderr.write(('Please specify an existent path to a picard jar file'
                     'or ensure picard.jar is in your working directory.\n'))
     sys.exit(1)
-elif not os.exists(fasta):
+elif not os.path.exists(fasta):
     sys.stderr.write('Please specify a path to an existent FASTA file\n')
     sys.exit(1)
-elif not os.exists(directory):
+elif not os.path.exists(directory):
     sys.stderr.write(('Please specify a path to an existent directory of BAM'
                       'files.\n'))
     sys.exit(1)
