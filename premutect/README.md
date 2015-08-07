@@ -29,8 +29,8 @@ addgroups.py -d input_dir
             Take note that these parameters can be specified *in any order*.
 - `-p`
   
-  `--picard_path`: The complete path to the picard jar file, defaults to a file
-                   called "picard.jar" in the working directory.
+  `--picard_path`: The complete path to the picard jar file. 
+                   *Default*: A file called picard.jar in the working directory.
 
 ###Example Usage
 ```
@@ -66,8 +66,8 @@ reorder_all.py -f fasta -d directory
 
 - `-p`
   
-  `--picardpath`: The full pathname of Picard. Defaults to a file named picard.jar
-   in the working directory.
+  `--picard_path`: The full pathname of Picard.
+   *Default*: A file called "picard.jar" in the current working directory.
 
 ####reindex and mapqto0
 These two scripts are rather short. Both take the directory of

@@ -33,6 +33,7 @@ multimutect.py -b list_of_bams | -p tumor1.bam:[normal1.bam] tumor2.bam...
                  [-M mutect_options | -c conf_file]
                  [-i input_directory] [-o output_directory]
                  [--numthreads num] [--mem num] [--process_whole_bam]
+                 [--statistics stat_file]
 ```
 
 - `-b`
@@ -98,11 +99,14 @@ multimutect.py -b list_of_bams | -p tumor1.bam:[normal1.bam] tumor2.bam...
             MuTect option is specified. Keep in mind that each thread will
             be forking processes that will each have a maximum of this number
             to allocate on the heap. 
-            *Default*: 2.
+            *Default*: 3.
 
 - `--process_whole_bam`: Each thread will process an entire BAM file at once
                          instead of multiple chromosomes at a time. This is
                          a good idea for smaller BAM files.
+
+- `--statistics`: Writes information based on runtime and the number of threads
+                  used to the specified file.
 
 Example Usage
 -------

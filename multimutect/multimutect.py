@@ -76,7 +76,7 @@ if __name__ == '__main__':
                               ' processes. Default: The # of cores on your'
                               ' computer / 4, rounded down.'))
 
-    parser.add_argument('--mem', type=int, default=2,
+    parser.add_argument('--mem', type=int, default=3,
                         help=('The max amount of memory each forked MuTect'
                               ' process can allocate on the Java heap'
                               ' Default: 2'))

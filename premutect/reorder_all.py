@@ -18,7 +18,7 @@ parser.add_argument('-f', '--fasta', type=str,
 parser.add_argument('-d', '--directory', type=str, 
                     help='Directory of BAM files to reorder', required=True)
 
-parser.add_argument('-p', '--picardpath', type=str, 
+parser.add_argument('-p', '--picard_path', type=str, 
                     help=('The full path of the Picard jarfile. Defaults to a file'
                     'named "picard.jar" in the current working directory'), 
                     default='picard.jar')
@@ -33,7 +33,7 @@ directory = args.directory
 cmd = 'java -jar {path} INPUT={{inbam}} REFERENCE={ref} OUTPUT={{outbam}}'
 
 #Validate command line arguments.
-if not os.path.exists(args.picardpath):
+if not os.path.exists(args.picard_path):
     sys.stderr.write(('Please specify an existent path to a picard jar file'
                     'or ensure picard.jar is in your working directory.\n'))
     sys.exit(1)
@@ -45,7 +45,7 @@ elif not os.path.exists(directory):
                       'files.\n'))
     sys.exit(1)
 
-cmd = cmd.format(path=args.picardpath, ref=fasta)
+cmd = cmd.format(path=args.picard_path, ref=fasta)
 
 """
 Walk through the directory tree, invoking ReorderSam on each BAM file with
