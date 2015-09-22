@@ -154,7 +154,8 @@ class Synchrom():
             #Skip header line
             if not re.search('.*bam', pair):
                 continue
-            tumor, normal = re.split(pairsep, pair)
+            #Filter out empty strings resulting from split.
+            tumor, normal = filter(lambda x: x != '', re.split(pairsep, pair))
             normal = normal.strip()
             if tumor == '':
                 sys.stderr.write(err_str.format(line_number))
