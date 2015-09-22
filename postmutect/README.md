@@ -3,9 +3,9 @@ Here are two scripts that allow for the necessary postprocessing steps of
 multimutect's output.
 
 If you used the default options with multimutect (that is, allowing for 
-chromosome-by-chromosome processing), you need only use combine.py on the
-resulting directory. Otherwise, you will need to use catenate.py on it first
-to glue all the chromosome-specific vcf files together.
+chromosome-by-chromosome processing), you need to  use catenate.py on the
+output directory, then combine.py on the directory if you wish to have all the
+vcf sample output in the same file.
 
 ##catenate
 Concatenates all vcf "pieces" generated from a BAM file together.

@@ -66,7 +66,7 @@ def vcf_combine(directory, vcf_files, reference, outfile, gatkpath,
         with open(listing, 'r') as bamlist:
             bamonly = [x for x in bamlist if re.search('\.bam\s*$', x)]
             #Make respective tumors/normals lists.
-            tumors, normals = zip(*[re.split('\t', x) for x in bamonly])
+            tumors, normals = zip(*[x.split() for x in bamonly])
             #Substitute .bam in the tumor element for an underscore
             #and append the corresponding normal if y isn't blank, else
             #just use the tumor filename (.bam -> .vcf in either case)
