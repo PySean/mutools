@@ -34,7 +34,7 @@ if __name__ == '__main__':
     #list of bamfiles.
     file_group = parser.add_mutually_exclusive_group(required=True)
 
-    file_group.add_argument('-l', '--bamlistfile', type=str, 
+    file_group.add_argument('-b', '--bamlistfile', type=str, 
                         help='File containing tumor:normal pairs for MuTect')
 
     file_group.add_argument('-p', '--pairs', type=str, nargs='*',
